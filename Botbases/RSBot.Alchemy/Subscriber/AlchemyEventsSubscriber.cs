@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Linq;
 using RSBot.Core;
 using RSBot.Core.Client.ReferenceObjects;
@@ -30,9 +30,7 @@ internal class AlchemyEventsSubscriber
             oldItem.Record.GetRealName(),
             Game.ReferenceManager.GetTranslation("UIIT_MSG_REINFORCERR_BREAKDOWN")
         );
-        Log.Warn("[Alchemy] The item has been destroyed, stopping now...");
-
-        Kernel.Bot?.Stop();
+        Bootstrap.StopWithReason("[Alchemy] The item has been destroyed, stopping now...");
     }
 
     private static void OnAlchemyError(ushort errorCode, AlchemyType type)
@@ -40,12 +38,28 @@ internal class AlchemyEventsSubscriber
         if (!Bootstrap.IsActive)
             return;
 
+        // Non-fatal server responses — bot will retry on the next tick
         if (errorCode is 0x5423)
             return;
 
-        Kernel.Bot?.Stop();
+        // Astral already at max (equals immortal level). Disable and continue.
+        if (errorCode is 0x5424)
+        {
+            Log.Warn("[Alchemy] Astral stone max reached, disabling astral for this session.");
+            if (Globals.Botbase?.EnhanceBundleConfig != null)
+                Globals.Botbase.EnhanceBundleConfig.UseAstralStones = false;
+            return;
+        }
 
-        Log.Error($"[Alchemy] Alchemy fusion error: {errorCode:X}");
+        // Code 3: transient server rejection (timing / cooldown). Item is intact,
+        // ingredients were not consumed. The Run() tick will re-check and retry.
+        if (errorCode is 0x3)
+        {
+            Log.Warn($"[Alchemy] Fusion rejected by server (code: {errorCode:X}), will retry...");
+            return;
+        }
+
+        Bootstrap.StopWithReason($"[Alchemy] Alchemy fusion error: {errorCode:X}");
     }
 
     /// <summary>

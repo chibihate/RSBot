@@ -22,6 +22,7 @@ namespace RSBot.General.Views;
 internal partial class Main : DoubleBufferedControl
 {
     private bool _clientVisible;
+    private bool _singleLoginMode;
 
     /// <summary>
     ///     Initializes a new instance of the <see cref="Main" /> class.
@@ -53,6 +54,13 @@ internal partial class Main : DoubleBufferedControl
         EventManager.SubscribeEvent("OnCharacterListReceived", OnCharacterListReceived);
         EventManager.SubscribeEvent("OnInitialized", OnInitialized);
         EventManager.SubscribeEvent("OnProfileChanged", OnProfileChanged);
+        EventManager.SubscribeEvent("OnRequestSingleLoginMode", OnRequestSingleLoginMode);
+    }
+
+    private void OnRequestSingleLoginMode()
+    {
+        _singleLoginMode = true;
+        AutoLogin.SingleLoginMode = true;
     }
 
     private void OnProfileChanged()
@@ -341,6 +349,16 @@ internal partial class Main : DoubleBufferedControl
 
         ClientManager.Kill();
 
+        if (_singleLoginMode)
+        {
+            _singleLoginMode = false;
+            AutoLogin.SingleLoginMode = false;
+            btnGoClientless.Enabled = false;
+            btnStartClient.Enabled = true;
+            btnStartClientless.Enabled = true;
+            return;
+        }
+
         if (GlobalConfig.Get<bool>("RSBot.General.EnableAutomatedLogin"))
         {
             btnStartClient.Enabled = false;
@@ -440,6 +458,27 @@ internal partial class Main : DoubleBufferedControl
     {
         if (View.AccountsWindow.ShowDialog() == DialogResult.OK)
             LoadAccounts();
+    }
+
+    private async void btnLogin_Click(object sender, EventArgs e)
+    {
+        if (comboAccounts.SelectedIndex <= 0)
+        {
+            MessageBox.Show(
+                LanguageManager.GetLang("StartClientlessMsgBoxContent"),
+                LanguageManager.GetLang("StartClientlessMsgBoxTitle"),
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Warning
+            );
+            return;
+        }
+
+        _singleLoginMode = true;
+        AutoLogin.SingleLoginMode = true;
+
+        var userAuthenticated = await HandleRegionalAuth();
+        if (userAuthenticated)
+            await StartClientProcess();
     }
 
     /// <summary>

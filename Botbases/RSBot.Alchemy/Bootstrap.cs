@@ -83,6 +83,26 @@ public class Bootstrap : IBotbase
         Log.AppendFormat(LogLevel.Notify, "[Alchemy] Initialized botbase");
     }
 
+    /// <summary>
+    ///     Logs a warning, stops the bot, and shows a popup with the reason.
+    /// </summary>
+    internal static void StopWithReason(string reason)
+    {
+        Log.Warn(reason);
+        Kernel.Bot.Stop();
+        MessageBox.Show(reason, "Alchemy Bot Stopped", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+    }
+
+    /// <summary>
+    ///     Logs a notification, stops the bot, and shows an info popup (used for successful completion stops).
+    /// </summary>
+    internal static void StopWithSuccess(string reason)
+    {
+        Log.Notify(reason);
+        Kernel.Bot.Stop();
+        MessageBox.Show(reason, "Alchemy Bot Stopped", MessageBoxButtons.OK, MessageBoxIcon.Information);
+    }
+
     /// <inheritdoc />
     public void Enable()
     {

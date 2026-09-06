@@ -58,10 +58,7 @@ internal class AttributeBundle : IAlchemyBundle
 
         if (!config.Attributes.Any())
         {
-            Log.Error("[Alchemy] No attribute stone fusion configured!");
-
-            Kernel.Bot.Stop();
-
+            Bootstrap.StopWithReason("[Alchemy] No attribute stone fusion configured!");
             return;
         }
 
@@ -83,11 +80,7 @@ internal class AttributeBundle : IAlchemyBundle
         }
 
         if (_shouldRun)
-        {
-            Log.Notify("[Alchemy] Attribute stone fusing finished!");
-
-            Kernel.Bot.Stop();
-        }
+            Bootstrap.StopWithSuccess("[Alchemy] Attribute stone fusing finished!");
     }
 
     /// <summary>

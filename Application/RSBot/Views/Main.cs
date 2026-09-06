@@ -410,6 +410,14 @@ public partial class Main : UIWindow
         scriptRecorder.Show();
     }
 
+    private void menuPacketLogger_Click(object sender, EventArgs e)
+    {
+        var item = (ToolStripMenuItem)sender;
+        item.Checked = !item.Checked;
+        Kernel.Proxy.SetPacketLogging(item.Checked);
+        Log.Debug(item.Checked ? "Packet logger ON — client→server packets will appear in debug log." : "Packet logger OFF.");
+    }
+
     private void btnSave_Click(object sender, EventArgs e)
     {
         GlobalConfig.Save();
@@ -844,6 +852,11 @@ public partial class Main : UIWindow
     /// </summary>
     private void OnStartBot()
     {
+        if (btnStartStop.InvokeRequired)
+        {
+            btnStartStop.BeginInvoke(new Action(() => btnStartStop.Text = LanguageManager.GetLang("StopBot")));
+            return;
+        }
         btnStartStop.Text = LanguageManager.GetLang("StopBot");
     }
 
@@ -852,6 +865,11 @@ public partial class Main : UIWindow
     /// </summary>
     private void OnStopBot()
     {
+        if (btnStartStop.InvokeRequired)
+        {
+            btnStartStop.BeginInvoke(new Action(() => btnStartStop.Text = LanguageManager.GetLang("StartBot")));
+            return;
+        }
         btnStartStop.Text = LanguageManager.GetLang("StartBot");
     }
 

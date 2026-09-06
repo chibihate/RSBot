@@ -63,8 +63,8 @@ public class AlchemyManager
     public static bool TryFuseElixir(InventoryItem item, InventoryItem elixir, InventoryItem? powder)
     {
         var itemInInventory = Game.Player.Inventory.GetItemAt(item.Slot);
-        var elixirInInventory = Game.Player.Inventory.GetItemAt(elixir.Slot);
-        var powderInInventory = Game.Player.Inventory.GetItemAt(powder.Slot);
+        var elixirInInventory = elixir != null ? Game.Player.Inventory.GetItemAt(elixir.Slot) : null;
+        var powderInInventory = powder != null ? Game.Player.Inventory.GetItemAt(powder.Slot) : null;
         var isProofItem =
             powderInInventory != null ? new TypeIdFilter(3, 3, 10, 8).EqualsRefItem(powderInInventory!.Record) : false;
         var alchemyType = isProofItem ? AlchemyType.EnhancerElixir : AlchemyType.Elixir;

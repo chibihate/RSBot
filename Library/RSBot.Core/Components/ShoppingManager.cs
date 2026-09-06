@@ -3,6 +3,7 @@ using RSBot.Core.Network;
 using RSBot.Core.Objects;
 using RSBot.Core.Objects.Cos;
 using RSBot.Core.Objects.Inventory;
+using RSBot.Core.Objects.Quests;
 using RSBot.Core.Objects.Spawn;
 using System;
 using System.Collections.Generic;
@@ -381,6 +382,271 @@ public static class ShoppingManager
         CloseShop();
     }
 
+    public static void AcceptQuest(string npcCodeName, uint questId)
+    {
+        var quest = Game.ReferenceManager.GetRefQuest(questId);
+        if (quest == null)
+        {
+            Log.Warn($"[AcceptQuest] Quest {questId} not found in reference data.");
+            return;
+        }
+
+        if (Game.Player.QuestLog.ActiveQuests.ContainsKey(questId))
+        {
+            Log.Notify($"[AcceptQuest] Quest [{quest.GetTranslatedName()}] already active, skipping.");
+            return;
+        }
+
+        if (Game.Player.QuestLog.ActiveQuests.TryGetValue(questId, out var activeQuest))
+        {
+            var isDone = activeQuest.Status is QuestStatus.Completed
+                                            or QuestStatus.CompletedXTimes
+                                            or QuestStatus.CompletedButNotSupplied
+                                            or QuestStatus.CompletedByUserButNotSupplied;
+            if (isDone)
+            {
+                Log.Notify($"[AcceptQuest] Quest [{quest.GetTranslatedName()}] already completed, skipping.");
+                return;
+            }
+
+            Log.Notify($"[AcceptQuest] Quest [{quest.GetTranslatedName()}] already active, skipping.");
+            return;
+        }
+
+        if (!SpawnManager.TryGetEntity<SpawnedNpcNpc>(p => p.Record.CodeName == npcCodeName, out var entity))
+        {
+            Log.Warn($"[AcceptQuest] NPC '{npcCodeName}' not found nearby.");
+            return;
+        }
+
+        // S→C 0x30D4 after 0x7046 contains the quest list: byte subtype=04, string npcDialog, byte count, [count × string questSelectName]
+        string[] questList = null;
+        var listCallback = new AwaitCallback(
+            response =>
+            {
+                if (response.ReadByte() != 0x04)
+                    return AwaitCallbackResult.ConditionFailed;
+
+                response.ReadString(); // NPC dialog header string
+                var count = response.ReadByte();
+                questList = new string[count];
+                for (var i = 0; i < count; i++)
+                    questList[i] = response.ReadString();
+
+                return AwaitCallbackResult.Success;
+            },
+            0x30D4
+        );
+
+        SelectNPC(npcCodeName);
+
+        var talkPacket = new Packet(0x7046);
+        talkPacket.WriteUInt(entity.UniqueId);
+        talkPacket.WriteByte((byte)TalkOption.Quest);
+        PacketManager.SendPacket(talkPacket, PacketDestination.Server, listCallback);
+        listCallback.AwaitResponse(3000);
+
+        if (questList == null)
+        {
+            Log.Warn("[AcceptQuest] Failed to receive quest list from server.");
+            CloseShop();
+            return;
+        }
+
+        // Quest codename "QNO_DAILY_2_3" maps to list entry "SN_QSP_DAILY_2_3"
+        var suffix = quest.CodeName.Contains('_')
+            ? quest.CodeName.Substring(quest.CodeName.IndexOf('_') + 1)
+            : quest.CodeName;
+
+        var questIndex = -1;
+        foreach (var candidate in new[] { $"SN_QSP_{suffix}", $"SN_{quest.CodeName}" })
+        {
+            questIndex = Array.FindIndex(questList, s => string.Equals(s, candidate, StringComparison.OrdinalIgnoreCase));
+            if (questIndex >= 0) break;
+        }
+
+        if (questIndex < 0)
+        {
+            Log.Warn($"[AcceptQuest] Quest not found in NPC list. Available: {string.Join(", ", questList)}");
+            CloseShop();
+            return;
+        }
+
+        // Slot = 4 (fixed NPC menu offset) + 1-based index
+        var slot = (byte)(4 + questIndex + 1);
+        Log.Debug($"[AcceptQuest] Quest index={questIndex}, slot=0x{slot:X2}");
+
+        var dialogPacket = new Packet(0x30D4);
+        dialogPacket.WriteByte(slot);
+        PacketManager.SendPacket(dialogPacket, PacketDestination.Server);
+        Thread.Sleep(500);
+
+        var acceptPacket = new Packet(0x30D4);
+        acceptPacket.WriteByte(0x05);
+        var acceptCallback = new AwaitCallback(null, 0x30D5);
+        PacketManager.SendPacket(acceptPacket, PacketDestination.Server, acceptCallback);
+        acceptCallback.AwaitResponse(5000);
+
+        Log.Debug($"[AcceptQuest] Result: {(acceptCallback.IsCompleted ? "Success" : "Timeout")}");
+        CloseShop();
+    }
+
+    public static void CompleteQuest(string npcCodeName, uint questId)
+    {
+        var quest = Game.ReferenceManager.GetRefQuest(questId);
+        if (quest == null)
+        {
+            Log.Warn($"[CompleteQuest] Quest {questId} not found in reference data.");
+            return;
+        }
+
+        if (!Game.Player.QuestLog.ActiveQuests.TryGetValue(questId, out var activeQuest))
+        {
+            Log.Notify($"[CompleteQuest] Quest [{quest.GetTranslatedName()}] not in active quests, skipping.");
+            return;
+        }
+
+        if ((activeQuest.Type & QuestType.Status) == QuestType.Status)
+        {
+            var completable = activeQuest.Status == QuestStatus.CompletedButNotSupplied
+                           || activeQuest.Status == QuestStatus.CompletedByUserButNotSupplied;
+            if (!completable)
+            {
+                Log.Notify($"[CompleteQuest] Quest [{quest.GetTranslatedName()}] not yet completable (status: {activeQuest.Status}).");
+                return;
+            }
+        }
+
+        if (!SpawnManager.TryGetEntity<SpawnedNpcNpc>(p => p.Record.CodeName == npcCodeName, out var entity))
+        {
+            Log.Warn($"[CompleteQuest] NPC '{npcCodeName}' not found nearby.");
+            return;
+        }
+
+        SelectNPC(npcCodeName);
+
+        // Step 1: open quest dialog — await 0xB046 (talk confirm) + 0x30D4 subtype=04 (quest list)
+        string[] questList = null;
+        var talkConfirmCallback = new AwaitCallback(
+            response => response.ReadByte() == 0x01 && response.ReadByte() == (byte)TalkOption.Quest
+                ? AwaitCallbackResult.Success
+                : AwaitCallbackResult.ConditionFailed,
+            0xB046
+        );
+        var listCallback = new AwaitCallback(
+            response =>
+            {
+                if (response.ReadByte() != 0x04)
+                    return AwaitCallbackResult.ConditionFailed;
+                response.ReadString();
+                var count = response.ReadByte();
+                questList = new string[count];
+                for (var i = 0; i < count; i++)
+                    questList[i] = response.ReadString();
+                return AwaitCallbackResult.Success;
+            },
+            0x30D4
+        );
+
+        var talkPacket = new Packet(0x7046);
+        talkPacket.WriteUInt(entity.UniqueId);
+        talkPacket.WriteByte((byte)TalkOption.Quest);
+        PacketManager.SendPacket(talkPacket, PacketDestination.Server, talkConfirmCallback, listCallback);
+        talkConfirmCallback.AwaitResponse(3000);
+
+        if (!talkConfirmCallback.IsCompleted)
+        {
+            Log.Warn("[CompleteQuest] Talk request rejected by server.");
+            CloseShop();
+            return;
+        }
+
+        listCallback.AwaitResponse(3000);
+
+        if (questList == null)
+        {
+            Log.Warn("[CompleteQuest] Failed to receive quest list from server.");
+            CloseShop();
+            return;
+        }
+
+        Log.Debug($"[CompleteQuest] Quest list: [{string.Join(", ", questList)}]");
+
+        var suffix = quest.CodeName.Contains('_')
+            ? quest.CodeName.Substring(quest.CodeName.IndexOf('_') + 1)
+            : quest.CodeName;
+
+        var questIndex = -1;
+        foreach (var candidate in new[] { $"SN_QSP_{suffix}", $"SN_{quest.CodeName}" })
+        {
+            questIndex = Array.FindIndex(questList, s => string.Equals(s, candidate, StringComparison.OrdinalIgnoreCase));
+            if (questIndex >= 0) break;
+        }
+
+        if (questIndex < 0)
+        {
+            Log.Warn($"[CompleteQuest] Quest not found in NPC list. Available: {string.Join(", ", questList)}");
+            CloseShop();
+            return;
+        }
+
+        var slot = (byte)(4 + questIndex + 1);
+        Log.Debug($"[CompleteQuest] Quest index={questIndex}, slot=0x{slot:X2}");
+
+        // Step 2: select quest slot → server sends 0x3514 containing the server-side dialogId
+        uint serverQuestId = 0;
+        var dialogCallback = new AwaitCallback(
+            response =>
+            {
+                serverQuestId = response.ReadUInt();
+                return AwaitCallbackResult.Success;
+            },
+            0x3514
+        );
+        var slotPacket = new Packet(0x30D4);
+        slotPacket.WriteByte(slot);
+        PacketManager.SendPacket(slotPacket, PacketDestination.Server, dialogCallback);
+        dialogCallback.AwaitResponse(3000);
+
+        if (!dialogCallback.IsCompleted)
+        {
+            Log.Warn("[CompleteQuest] Quest not yet completable or server did not respond with 0x3514.");
+            CloseShop();
+            return;
+        }
+
+        Log.Debug($"[CompleteQuest] 0x3514 serverQuestId={serverQuestId} refQuestId={questId}");
+
+        // Step 3: send 0x7515 + 0x704B together before awaiting responses (matches manual capture)
+        var expectedId = serverQuestId != 0 ? serverQuestId : questId;
+        var confirmPacket = new Packet(0x7515);
+        confirmPacket.WriteUInt(expectedId);
+        confirmPacket.WriteByte(0);
+
+        var removeCallback = new AwaitCallback(
+            response =>
+            {
+                var type = (QuestUpdateType)response.ReadByte();
+                var id = response.ReadUInt();
+                return type == QuestUpdateType.Remove && id == expectedId
+                    ? AwaitCallbackResult.Success
+                    : AwaitCallbackResult.ConditionFailed;
+            },
+            0x30D5
+        );
+
+        PacketManager.SendPacket(confirmPacket, PacketDestination.Server, removeCallback);
+
+        // Send 0x704B immediately after 0x7515, not after waiting for 0x30D5
+        var closePacket = new Packet(0x704B);
+        closePacket.WriteUInt(entity.UniqueId);
+        PacketManager.SendPacket(closePacket, PacketDestination.Server);
+        SelectedEntity = null;
+
+        removeCallback.AwaitResponse(5000);
+        Log.Debug($"[CompleteQuest] Result: {(removeCallback.IsCompleted ? "Success" : "Timeout")}");
+    }
+
     /// <summary>
     ///     Repairs the items.
     /// </summary>
@@ -619,8 +885,11 @@ public static class ShoppingManager
     {
         Running = false;
 
-        if (SelectedEntity != null && SelectedEntity.TryDeselect())
+        if (SelectedEntity != null)
+        {
+            SelectedEntity.TryDeselect();
             SelectedEntity = null;
+        }
     }
 
     /// <summary>

@@ -20,12 +20,21 @@ internal static class AutoLogin
     /// </summary>
     public static bool Pending;
 
+    /// <summary>
+    ///     When true, autologin runs once without relogin on disconnect.
+    ///     Set externally (e.g. Login button or Controller); cleared by Main on disconnect.
+    /// </summary>
+    public static bool SingleLoginMode;
+
     public static CancellationTokenSource? Cts { get; private set; }
 
     /// <summary>
     ///     Is the auto login handling <c>true</c> otherwise; <c>false</c>
     /// </summary>
     private static bool _busy;
+
+    private static bool IsEnabled =>
+        SingleLoginMode || GlobalConfig.Get<bool>("RSBot.General.EnableAutomatedLogin");
 
     /// <summary>
     ///     Does the automatic login.
@@ -42,7 +51,7 @@ internal static class AutoLogin
 
         _busy = true;
 
-        if (!GlobalConfig.Get<bool>("RSBot.General.EnableAutomatedLogin"))
+        if (!IsEnabled)
         {
             _busy = false;
             return;
@@ -118,7 +127,7 @@ internal static class AutoLogin
         if (Accounts.Joined == null)
             return;
 
-        if (!GlobalConfig.Get<bool>("RSBot.General.EnableAutomatedLogin"))
+        if (!IsEnabled)
             return;
 
         var secondaryPassword = Accounts.Joined.SecondaryPassword;
@@ -223,10 +232,7 @@ internal static class AutoLogin
     /// </summary>
     public static void SendStaticCaptcha()
     {
-        if (
-            !GlobalConfig.Get<bool>("RSBot.General.EnableStaticCaptcha")
-            || !GlobalConfig.Get<bool>("RSBot.General.EnableAutomatedLogin")
-        )
+        if (!GlobalConfig.Get<bool>("RSBot.General.EnableStaticCaptcha") || !IsEnabled)
             return;
 
         var captcha = GlobalConfig.Get<string>("RSBot.General.StaticCaptcha");
@@ -246,7 +252,7 @@ internal static class AutoLogin
     /// <param name="character">The character.</param>
     public static void EnterGame(string character)
     {
-        if (!GlobalConfig.Get<bool>("RSBot.General.EnableAutomatedLogin"))
+        if (!IsEnabled)
             return;
 
         var packet = new Packet(0x7001);

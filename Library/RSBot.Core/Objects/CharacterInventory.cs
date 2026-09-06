@@ -172,7 +172,7 @@ public class CharacterInventory : InventoryItemCollection
         Log.Debug("Sorting the character inventory...");
 
         //Use iterations to avoid deadlocks!
-        const int maxIterations = 10;
+        const int maxIterations = 100;
         var iterations = 0;
 
         //Ignore items which move operations failed in the next iteration

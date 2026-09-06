@@ -112,9 +112,7 @@ internal class MagicBundle : IAlchemyBundle
 
         if (config?.MagicStones?.Count == 0)
         {
-            Log.Warn("[Alchemy] No magic stones configured!");
-            Kernel.Bot.Stop();
-
+            Bootstrap.StopWithReason("[Alchemy] No magic stones configured!");
             return;
         }
 
@@ -182,11 +180,7 @@ internal class MagicBundle : IAlchemyBundle
         }
 
         if (_shouldRun)
-        {
-            Log.Notify("[Alchemy] Magic stone fusing finished!");
-
-            Kernel.Bot.Stop();
-        }
+            Bootstrap.StopWithSuccess("[Alchemy] Magic stone fusing finished!");
     }
 
     #endregion Methods

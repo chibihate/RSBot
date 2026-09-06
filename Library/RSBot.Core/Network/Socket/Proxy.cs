@@ -162,8 +162,19 @@ public class Proxy
     /// <param name="packet">The packet</param>
     private void HandleReceivedPacket(Packet packet, PacketDestination destination)
     {
-        //if(packet.Opcode != 0x2002)
-        //   Log.Notify(packet.ToString());
+        if (_logClientPackets)
+        {
+            if (destination == PacketDestination.Server)
+            {
+                if (packet.Opcode != 0x2002 && packet.Opcode != 0x6100 && packet.Opcode != 0x7021)
+                    Log.Debug($"[C→S] {packet}");
+            }
+            else if (destination == PacketDestination.Client)
+            {
+                if (packet.Opcode != 0x2002 && packet.Opcode != 0x3015 && packet.Opcode != 0x30D0 && packet.Opcode != 0x30CB)
+                    Log.Debug($"[S→C] {packet}");
+            }
+        }
 
         try
         {
@@ -198,8 +209,11 @@ public class Proxy
     private ushort _agentPort;
     private string _gatewayIp;
     private ushort _gatewayPort;
+    private bool _logClientPackets;
 
     #endregion Fields
+
+    public void SetPacketLogging(bool enabled) => _logClientPackets = enabled;
 
     #region Event Listeners
 

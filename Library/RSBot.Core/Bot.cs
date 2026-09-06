@@ -1,4 +1,5 @@
-﻿using System.Threading;
+﻿using System;
+using System.Threading;
 using System.Threading.Tasks;
 using RSBot.Core.Components;
 using RSBot.Core.Event;
@@ -54,18 +55,27 @@ public class Bot
         Task.Factory.StartNew(
             async e =>
             {
-                Running = true;
-
-                EventManager.FireEvent("OnStartBot");
-                Botbase.Start();
-
-                while (!TokenSource.IsCancellationRequested)
+                try
                 {
-                    if (!Game.Ready)
-                        continue;
+                    Running = true;
 
-                    Botbase.Tick();
-                    await Task.Delay(100);
+                    EventManager.FireEvent("OnStartBot");
+                    Botbase.Start();
+
+                    while (!TokenSource.IsCancellationRequested)
+                    {
+                        if (!Game.Ready)
+                            continue;
+
+                        Botbase.Tick();
+                        await Task.Delay(100);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Log.Fatal(ex);
+                    if (Running)
+                        Stop();
                 }
             },
             TokenSource.Token,

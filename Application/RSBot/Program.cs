@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Globalization;
+using System.IO;
 using System.Reflection;
 using System.Text;
 using System.Windows.Forms;
@@ -25,6 +26,33 @@ internal static class Program
         .GetExecutingAssembly()
         .GetCustomAttribute<AssemblyDescriptionAttribute>()
         ?.Description;
+
+    private static readonly string CrashLogPath = Path.Combine(
+        AppDomain.CurrentDomain.BaseDirectory, "crash.log");
+
+    private static void WriteCrashLog(Exception ex)
+    {
+        try
+        {
+            var entry = new StringBuilder();
+            entry.AppendLine($"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] {AssemblyTitle} {AssemblyVersion}");
+            entry.AppendLine($"Type   : {ex?.GetType().FullName}");
+            entry.AppendLine($"Message: {ex?.Message}");
+            entry.AppendLine($"Source : {ex?.Source}");
+            entry.AppendLine("Stack  :");
+            entry.AppendLine(ex?.StackTrace);
+            if (ex?.InnerException != null)
+            {
+                entry.AppendLine("Inner  :");
+                entry.AppendLine($"  {ex.InnerException.GetType().FullName}: {ex.InnerException.Message}");
+                entry.AppendLine(ex.InnerException.StackTrace);
+            }
+            entry.AppendLine(new string('-', 80));
+
+            File.AppendAllText(CrashLogPath, entry.ToString(), Encoding.UTF8);
+        }
+        catch { }
+    }
 
     public class CommandLineOptions
     {
@@ -60,42 +88,80 @@ internal static class Program
         );
     }
 
+    internal static void WriteLog(string message)
+    {
+        try
+        {
+            File.AppendAllText(CrashLogPath,
+                $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] {message}{Environment.NewLine}",
+                Encoding.UTF8);
+        }
+        catch { }
+    }
+
     [STAThread]
     private static void Main(string[] args)
     {
-        var parser = new Parser(with => with.HelpWriter = Console.Out);
-        var parserResult = parser.ParseArguments<CommandLineOptions>(args);
+        WriteLog($"--- Starting {AssemblyTitle} {AssemblyVersion} ---");
 
-        parserResult
-            .WithParsed(options =>
-            {
-                RunOptions(options);
-            })
-            .WithNotParsed(errs =>
-            {
-                DisplayHelp(parserResult);
-                Environment.Exit(1);
-            });
+        AppDomain.CurrentDomain.UnhandledException += (_, e) =>
+        {
+            WriteCrashLog(e.ExceptionObject as Exception);
+        };
 
-        //CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
+        Application.ThreadException += (_, e) =>
+        {
+            WriteCrashLog(e.Exception);
+        };
 
-        // We need "." instead of "," while saving float numbers
-        // Also client data is "." based float digit numbers
-        CultureInfo.CurrentCulture = new CultureInfo("en-US");
+        Application.SetUnhandledExceptionMode(UnhandledExceptionMode.CatchException);
 
-        Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+        try
+        {
+            var parser = new Parser(with => with.HelpWriter = Console.Out);
+            var parserResult = parser.ParseArguments<CommandLineOptions>(args);
 
-        Application.EnableVisualStyles();
-        Application.SetCompatibleTextRenderingDefault(false);
-        Application.SetHighDpiMode(HighDpiMode.PerMonitorV2);
+            parserResult
+                .WithParsed(options =>
+                {
+                    RunOptions(options);
+                })
+                .WithNotParsed(errs =>
+                {
+                    DisplayHelp(parserResult);
+                    Environment.Exit(1);
+                });
 
-        using Main mainForm = new Main();
-        using SplashScreen splashScreen = new(mainForm);
+            //CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
 
-        splashScreen.ShowDialog();
+            // We need "." instead of "," while saving float numbers
+            // Also client data is "." based float digit numbers
+            CultureInfo.CurrentCulture = new CultureInfo("en-US");
 
-        splashScreen.Dispose();
-        Application.Run(mainForm);
+            Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+
+            Application.EnableVisualStyles();
+            Application.SetCompatibleTextRenderingDefault(false);
+            Application.SetHighDpiMode(HighDpiMode.PerMonitorV2);
+
+            using Main mainForm = new Main();
+            using SplashScreen splashScreen = new(mainForm);
+
+            splashScreen.ShowDialog();
+
+            splashScreen.Dispose();
+            Application.Run(mainForm);
+        }
+        catch (Exception ex)
+        {
+            WriteCrashLog(ex);
+            MessageBox.Show(
+                $"An unexpected error occurred. Details saved to:\n{CrashLogPath}\n\n{ex.Message}",
+                $"{AssemblyTitle} - Fatal Error",
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Error
+            );
+        }
     }
 
     private static void RunOptions(CommandLineOptions options)

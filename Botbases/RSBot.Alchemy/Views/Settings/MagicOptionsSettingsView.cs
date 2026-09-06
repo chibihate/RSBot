@@ -66,6 +66,11 @@ public partial class MagicOptionsSettingsView : DoubleBufferedControl
 
     private void View_EngineChanged(InventoryItem item, AlchemyEngine alchemyEngine)
     {
+        if (InvokeRequired)
+        {
+            BeginInvoke(() => View_EngineChanged(item, alchemyEngine));
+            return;
+        }
         PopulateListView();
     }
 
@@ -75,6 +80,11 @@ public partial class MagicOptionsSettingsView : DoubleBufferedControl
     /// <param name="item"></param>
     private void View_ItemChanged(InventoryItem item)
     {
+        if (InvokeRequired)
+        {
+            BeginInvoke(() => View_ItemChanged(item));
+            return;
+        }
         PopulateListView();
     }
 

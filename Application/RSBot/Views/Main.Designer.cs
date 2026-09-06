@@ -58,6 +58,7 @@ namespace RSBot.Views
             toolsToolStripMenuItem = new ToolStripMenuItem();
             menuScriptRecorder = new ToolStripMenuItem();
             menuPluginManager = new ToolStripMenuItem();
+            menuPacketLogger = new ToolStripMenuItem();
             menuPlugins = new ToolStripMenuItem();
             aboutToolStripMenuItem = new ToolStripMenuItem();
             thisToolStripMenuItem = new ToolStripMenuItem();
@@ -343,28 +344,37 @@ namespace RSBot.Views
             // 
             // toolsToolStripMenuItem
             // 
-            toolsToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { menuScriptRecorder, menuPluginManager });
+            toolsToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { menuScriptRecorder, menuPluginManager, menuPacketLogger });
             toolsToolStripMenuItem.ForeColor = System.Drawing.Color.FromArgb(0, 0, 0);
             toolsToolStripMenuItem.Name = "toolsToolStripMenuItem";
             toolsToolStripMenuItem.Size = new System.Drawing.Size(148, 26);
             toolsToolStripMenuItem.Text = "Tools";
-            // 
+            //
             // menuScriptRecorder
-            // 
+            //
             menuScriptRecorder.ForeColor = System.Drawing.Color.FromArgb(0, 0, 0);
             menuScriptRecorder.Name = "menuScriptRecorder";
             menuScriptRecorder.Size = new System.Drawing.Size(204, 26);
             menuScriptRecorder.Text = "Script Recorder";
             menuScriptRecorder.Click += menuScriptRecorder_Click;
-            // 
+            //
             // menuPluginManager
-            // 
+            //
             menuPluginManager.ForeColor = System.Drawing.Color.FromArgb(0, 0, 0);
             menuPluginManager.Name = "menuPluginManager";
             menuPluginManager.Size = new System.Drawing.Size(204, 26);
             menuPluginManager.Text = "Plugin Manager";
             menuPluginManager.ToolTipText = "Manage plugins - Enable, Disable or Load new plugins";
             menuPluginManager.Click += menuPluginManager_Click;
+            //
+            // menuPacketLogger
+            //
+            menuPacketLogger.ForeColor = System.Drawing.Color.FromArgb(0, 0, 0);
+            menuPacketLogger.Name = "menuPacketLogger";
+            menuPacketLogger.Size = new System.Drawing.Size(204, 26);
+            menuPacketLogger.Text = "Packet Logger";
+            menuPacketLogger.ToolTipText = "Toggle logging of client packets to debug window";
+            menuPacketLogger.Click += menuPacketLogger_Click;
             // 
             // menuPlugins
             // 
@@ -530,6 +540,7 @@ namespace RSBot.Views
         private System.Windows.Forms.ToolStripMenuItem toolsToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem menuScriptRecorder;
         private System.Windows.Forms.ToolStripMenuItem menuPluginManager;
+        private System.Windows.Forms.ToolStripMenuItem menuPacketLogger;
         private System.Windows.Forms.ToolStripMenuItem menuPlugins;
         private System.Windows.Forms.ToolStripMenuItem aboutToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem thisToolStripMenuItem;

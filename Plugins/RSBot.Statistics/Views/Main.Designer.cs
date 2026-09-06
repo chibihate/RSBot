@@ -29,10 +29,13 @@
         private void InitializeComponent()
         {
             components = new System.ComponentModel.Container();
+            numAlchemyMilestone = new System.Windows.Forms.NumericUpDown();
+            lblAlchemyFrom = new System.Windows.Forms.Label();
             System.Windows.Forms.ListViewGroup listViewGroup1 = new System.Windows.Forms.ListViewGroup("Player", System.Windows.Forms.HorizontalAlignment.Left);
             System.Windows.Forms.ListViewGroup listViewGroup2 = new System.Windows.Forms.ListViewGroup("Loot", System.Windows.Forms.HorizontalAlignment.Left);
             System.Windows.Forms.ListViewGroup listViewGroup3 = new System.Windows.Forms.ListViewGroup("Enemy", System.Windows.Forms.HorizontalAlignment.Left);
             System.Windows.Forms.ListViewGroup listViewGroup4 = new System.Windows.Forms.ListViewGroup("Bot", System.Windows.Forms.HorizontalAlignment.Left);
+            System.Windows.Forms.ListViewGroup listViewGroup5 = new System.Windows.Forms.ListViewGroup("Alchemy", System.Windows.Forms.HorizontalAlignment.Left);
             splitContainer1 = new System.Windows.Forms.SplitContainer();
             panelStaticFilters = new SDUI.Controls.GroupBox();
             separator1 = new SDUI.Controls.Separator();
@@ -45,6 +48,7 @@
             panel1 = new SDUI.Controls.Panel();
             btnReset = new SDUI.Controls.Button();
             timer = new System.Windows.Forms.Timer(components);
+            ((System.ComponentModel.ISupportInitialize)numAlchemyMilestone).BeginInit();
             ((System.ComponentModel.ISupportInitialize)splitContainer1).BeginInit();
             splitContainer1.Panel1.SuspendLayout();
             splitContainer1.Panel2.SuspendLayout();
@@ -129,7 +133,9 @@
             listViewGroup3.Name = "grpEnemy";
             listViewGroup4.Header = "Bot";
             listViewGroup4.Name = "grpBot";
-            lvStatistics.Groups.AddRange(new System.Windows.Forms.ListViewGroup[] { listViewGroup1, listViewGroup2, listViewGroup3, listViewGroup4 });
+            listViewGroup5.Header = "Alchemy";
+            listViewGroup5.Name = "grpAlchemy";
+            lvStatistics.Groups.AddRange(new System.Windows.Forms.ListViewGroup[] { listViewGroup1, listViewGroup2, listViewGroup3, listViewGroup4, listViewGroup5 });
             lvStatistics.Location = new System.Drawing.Point(10, 10);
             lvStatistics.Name = "lvStatistics";
             lvStatistics.Size = new System.Drawing.Size(483, 451);
@@ -167,6 +173,8 @@
             panel1.Border = new System.Windows.Forms.Padding(0, 1, 0, 0);
             panel1.BorderColor = System.Drawing.Color.Transparent;
             panel1.Controls.Add(btnReset);
+            panel1.Controls.Add(numAlchemyMilestone);
+            panel1.Controls.Add(lblAlchemyFrom);
             panel1.Dock = System.Windows.Forms.DockStyle.Bottom;
             panel1.Location = new System.Drawing.Point(10, 461);
             panel1.Name = "panel1";
@@ -174,9 +182,27 @@
             panel1.ShadowDepth = 4F;
             panel1.Size = new System.Drawing.Size(483, 35);
             panel1.TabIndex = 2;
-            // 
+            //
+            // lblAlchemyFrom
+            //
+            lblAlchemyFrom.AutoSize = true;
+            lblAlchemyFrom.Location = new System.Drawing.Point(5, 11);
+            lblAlchemyFrom.Name = "lblAlchemyFrom";
+            lblAlchemyFrom.Text = "Alchemy from +";
+            //
+            // numAlchemyMilestone
+            //
+            numAlchemyMilestone.Location = new System.Drawing.Point(100, 7);
+            numAlchemyMilestone.Maximum = new decimal(new int[] { 255, 0, 0, 0 });
+            numAlchemyMilestone.Minimum = new decimal(new int[] { 0, 0, 0, 0 });
+            numAlchemyMilestone.Name = "numAlchemyMilestone";
+            numAlchemyMilestone.Size = new System.Drawing.Size(55, 23);
+            numAlchemyMilestone.TabIndex = 1;
+            numAlchemyMilestone.Value = new decimal(new int[] { 0, 0, 0, 0 });
+            numAlchemyMilestone.ValueChanged += numAlchemyMilestone_ValueChanged;
+            //
             // btnReset
-            // 
+            //
             btnReset.Color = System.Drawing.Color.Transparent;
             btnReset.Location = new System.Drawing.Point(401, 6);
             btnReset.Name = "btnReset";
@@ -208,6 +234,7 @@
             ((System.ComponentModel.ISupportInitialize)splitContainer1).EndInit();
             splitContainer1.ResumeLayout(false);
             contextMenuStrip.ResumeLayout(false);
+            ((System.ComponentModel.ISupportInitialize)numAlchemyMilestone).EndInit();
             panel1.ResumeLayout(false);
             ResumeLayout(false);
         }
@@ -226,5 +253,7 @@
         private System.Windows.Forms.Timer timer;
         private SDUI.Controls.ContextMenuStrip contextMenuStrip;
         private System.Windows.Forms.ToolStripMenuItem resetToolStripMenuItem;
+        private System.Windows.Forms.Label lblAlchemyFrom;
+        private System.Windows.Forms.NumericUpDown numAlchemyMilestone;
     }
 }

@@ -30,7 +30,7 @@ internal class AgentLoginRequestHook : IPacketHook
     /// <returns></returns>
     public Packet ReplacePacket(Packet packet)
     {
-        if (!GlobalConfig.Get<bool>("RSBot.General.EnableAutomatedLogin"))
+        if (!AutoLogin.SingleLoginMode && !GlobalConfig.Get<bool>("RSBot.General.EnableAutomatedLogin"))
             return packet;
 
         var username = GlobalConfig.Get<string>("RSBot.General.AutoLoginAccountUsername");

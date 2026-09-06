@@ -6,6 +6,7 @@ using System.Windows.Forms;
 using RSBot.Core;
 using RSBot.Statistics.Stats;
 using RSBot.Statistics.Stats.Calculators;
+using RSBot.Statistics.Stats.Calculators.Static;
 using SDUI.Controls;
 using CheckBox = SDUI.Controls.CheckBox;
 
@@ -36,6 +37,9 @@ public partial class Main : DoubleBufferedControl
             check.Checked = PlayerConfig.Get($"RSBot.Statistics.{check.Name}", true);
         foreach (var check in panelStaticFilters.Controls.OfType<CheckBox>())
             check.Checked = PlayerConfig.Get($"RSBot.Statistics.{check.Name}", true);
+
+        numAlchemyMilestone.Value = PlayerConfig.Get("RSBot.Statistics.AlchemyMilestone", 0);
+        AlchemyMilestone.Level = (byte)numAlchemyMilestone.Value;
     }
 
     /// <summary>
@@ -113,6 +117,10 @@ public partial class Main : DoubleBufferedControl
                 case StatisticsGroup.Bot:
                     lvItem.Group = lvStatistics.Groups["grpBot"];
                     break;
+
+                case StatisticsGroup.Alchemy:
+                    lvItem.Group = lvStatistics.Groups["grpAlchemy"];
+                    break;
             }
 
             lvStatistics.Items.Add(lvItem);
@@ -183,6 +191,12 @@ public partial class Main : DoubleBufferedControl
     {
         foreach (var calculator in CalculatorRegistry.Calculators)
             calculator.Reset();
+    }
+
+    private void numAlchemyMilestone_ValueChanged(object sender, EventArgs e)
+    {
+        AlchemyMilestone.Level = (byte)numAlchemyMilestone.Value;
+        PlayerConfig.Set("RSBot.Statistics.AlchemyMilestone", (int)numAlchemyMilestone.Value);
     }
 
     private void resetToolStripMenuItem_Click(object sender, EventArgs e)

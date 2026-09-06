@@ -38,11 +38,8 @@ internal class MoveScriptCommand : IScriptCommand
     public Dictionary<string, string> Arguments =>
         new()
         {
-            { "XSector", "The X sector of the region" },
-            { "YSector", "The Y sector of the region" },
-            { "XOffset", "The X offset inside the region" },
-            { "YOffset", "The Y offset inside the region" },
-            { "ZOffset", "The Z offset inside the region" },
+            { "Y", "The Y world coordinate" },
+            { "X", "The X world coordinate" },
         };
 
     #endregion Properties
@@ -58,9 +55,9 @@ internal class MoveScriptCommand : IScriptCommand
     /// </returns>
     public bool Execute(string[] arguments = null)
     {
-        if (arguments == null || arguments.Length != Arguments.Count)
+        if (arguments == null || (arguments.Length != 2 && arguments.Length != 5))
         {
-            Log.Warn("[Script] Invalid move command: Position information missing / invalid format.");
+            Log.Warn("[Script] Invalid move command: use 'move X Y' (world coords) or legacy 'move XOffset YOffset ZOffset XSector YSector'.");
 
             return false;
         }
@@ -112,21 +109,32 @@ internal class MoveScriptCommand : IScriptCommand
     /// <param name="arguments">The arguments.</param>
     private bool ExecuteMove(IReadOnlyList<string> arguments)
     {
-        if (
-            !float.TryParse(arguments[0], out var xOffset)
-            || !float.TryParse(arguments[1], out var yOffset)
-            || !float.TryParse(arguments[2], out var zOffset)
-            || !byte.TryParse(arguments[3], out var xSector)
-            || !byte.TryParse(arguments[4], out var ySector)
-        )
+        Position pos;
+        if (arguments.Count == 2)
         {
-            IsBusy = false;
-
-            return false; //Invalid format
+            if (!float.TryParse(arguments[0], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var x)
+                || !float.TryParse(arguments[1], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var y))
+            {
+                IsBusy = false;
+                return false;
+            }
+            pos = new Position(x, y);
+        }
+        else
+        {
+            if (!float.TryParse(arguments[0], out var xOffset)
+                || !float.TryParse(arguments[1], out var yOffset)
+                || !float.TryParse(arguments[2], out var zOffset)
+                || !byte.TryParse(arguments[3], out var xSector)
+                || !byte.TryParse(arguments[4], out var ySector))
+            {
+                IsBusy = false;
+                return false;
+            }
+            pos = new Position(xSector, ySector, xOffset, yOffset, zOffset);
         }
 
         Position previousPosition = Game.Player.Position;
-        Position pos = new(xSector, ySector, xOffset, yOffset, zOffset);
 
         if (PlayerConfig.Get("RSBot.Training.checkUseSpeedDrug", true))
         {

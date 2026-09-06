@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using RSBot.Core.Objects;
 
 namespace RSBot.Alchemy.Bundle.Enhance;
@@ -16,11 +16,6 @@ internal class EnhanceBundleConfig
     ///     Gets or sets the inventory item used to do the alchemy on
     /// </summary>
     public InventoryItem Item { get; set; }
-
-    /// <summary>
-    ///     Gets or sets a value indicating if the bot should stop if lucky powder is empty
-    /// </summary>
-    public bool StopIfLuckyPowderEmpty { get; set; }
 
     /// <summary>
     ///     Gets or sets a value indicating if immortal stones should be used
@@ -46,6 +41,21 @@ internal class EnhanceBundleConfig
     ///     Gets or sets the selected enhancer elixir
     /// </summary>
     public IEnumerable<InventoryItem> Elixirs { get; set; }
+
+    /// <summary>
+    ///     Gets or sets the selected lucky powder. Null means use any matching powder from inventory.
+    /// </summary>
+    public IEnumerable<InventoryItem> LuckyPowders { get; set; }
+
+    /// <summary>
+    ///     Gets or sets the minimum opt level at which lucky stones start being used (default 5)
+    /// </summary>
+    public byte LuckyStoneFromLevel { get; set; } = 5;
+
+    /// <summary>
+    ///     Gets or sets the list of per-level alchemy rules
+    /// </summary>
+    public List<AlchemyRule> Rules { get; set; } = new();
 
     #endregion Properties
 }

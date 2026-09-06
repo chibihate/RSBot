@@ -385,12 +385,19 @@ public partial class Main : DoubleBufferedControl
     {
         if (Kernel.Bot.Running || !Game.Ready)
             return;
+
+        var player = Game.Player;
+        var lootConfig = Bundles.Loot?.Config;
+
+        if (player == null || lootConfig == null)
+            return;
+
         if (
-            Bundles.Loot.Config.UseAbilityPet
-            && Game.Player.HasActiveAbilityPet
+            lootConfig.UseAbilityPet
+            && player.HasActiveAbilityPet
             && !PickupManager.RunningAbilityPetPickup
         )
-            PickupManager.RunAbilityPet(Game.Player.Position);
+            PickupManager.RunAbilityPet(player.Position);
     }
 
     /// <summary>

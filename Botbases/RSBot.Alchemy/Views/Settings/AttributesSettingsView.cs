@@ -148,6 +148,11 @@ public partial class AttributesSettingsView : DoubleBufferedControl
 
     private void View_EngineChanged(InventoryItem item, AlchemyEngine alchemyEngine)
     {
+        if (InvokeRequired)
+        {
+            BeginInvoke(() => View_EngineChanged(item, alchemyEngine));
+            return;
+        }
         PopulateView();
     }
 
@@ -157,6 +162,11 @@ public partial class AttributesSettingsView : DoubleBufferedControl
     /// <param name="item"></param>
     private void View_ItemChanged(InventoryItem item)
     {
+        if (InvokeRequired)
+        {
+            BeginInvoke(() => View_ItemChanged(item));
+            return;
+        }
         SelectedItem = item;
         PopulateView();
     }

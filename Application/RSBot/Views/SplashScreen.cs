@@ -41,11 +41,16 @@ public partial class SplashScreen : UIWindowBase
     /// <param name="e">The <see cref="EventArgs" /> instance containing the event data.</param>
     private void SplashScreen_Load(object sender, EventArgs e)
     {
+        Program.WriteLog("SplashScreen loading...");
+
         if (!LoadProfileConfig())
         {
+            Program.WriteLog("EXIT: User cancelled profile selection.");
             Environment.Exit(0);
             return;
         }
+
+        Program.WriteLog($"Profile loaded: {ProfileManager.SelectedProfile}");
 
         Kernel.Language = GlobalConfig.Get("RSBot.Language", "en_US");
 
@@ -96,6 +101,7 @@ public partial class SplashScreen : UIWindowBase
             }
             else
             {
+                Program.WriteLog("EXIT: sro_client.exe / media.pk2 not selected or not found.");
                 MessageBox.Show(LanguageManager.GetLang("SelectSroDirWarn"));
                 Environment.Exit(0);
             }
@@ -174,12 +180,15 @@ public partial class SplashScreen : UIWindowBase
     private void InitializeBot()
     {
         //---- Boot kernel -----
+        Program.WriteLog("Initializing kernel...");
         Kernel.Initialize();
         Game.Initialize();
 
         //---- Load Plugins ----
+        Program.WriteLog("Loading plugins...");
         if (!ExtensionManager.LoadAssemblies<IPlugin>())
         {
+            Program.WriteLog("ERROR: Failed to load plugins.");
             MessageBox.Show(
                 @"Failed to load plugins. Process canceled!",
                 @"Initialize Application - Error",
@@ -190,15 +199,20 @@ public partial class SplashScreen : UIWindowBase
         }
 
         //---- Load Botbases ----
+        Program.WriteLog("Loading botbases...");
         if (!ExtensionManager.LoadAssemblies<IBotbase>())
+        {
+            Program.WriteLog("ERROR: Failed to load botbases.");
             MessageBox.Show(
                 @"Failed to load botbases. Process canceled!",
                 @"Initialize Application - Error",
                 MessageBoxButtons.OK,
                 MessageBoxIcon.Error
             );
+        }
 
         CommandManager.Initialize();
+        Program.WriteLog("Initialization complete. Loading game data...");
     }
 
     /// <summary>
@@ -208,8 +222,10 @@ public partial class SplashScreen : UIWindowBase
     /// <param name="e">The <see cref="System.ComponentModel.DoWorkEventArgs" /> instance containing the event data.</param>
     private void referenceDataLoader_DoWork(object sender, DoWorkEventArgs e)
     {
+        Program.WriteLog("Loading archive files (media.pk2)...");
         if (!Game.InitializeArchiveFiles())
         {
+            Program.WriteLog("ERROR: Failed to load archive files (media.pk2).");
             MessageBox.Show(
                 @"Failed to load game data. Boot process canceled!",
                 @"Initialize Application - Error",
@@ -219,7 +235,9 @@ public partial class SplashScreen : UIWindowBase
             return;
         }
 
+        Program.WriteLog("Loading reference data...");
         Game.ReferenceManager.Load(GlobalConfig.Get("RSBot.TranslationIndex", 9), referenceDataLoader);
+        Program.WriteLog("Reference data loaded. Application ready.");
     }
 
     private void referenceDataLoader_ProgressChanged(object sender, ProgressChangedEventArgs e)

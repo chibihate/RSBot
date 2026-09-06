@@ -39,7 +39,10 @@ public partial class Main : DoubleBufferedControl
                 if (IsDisposed || Disposing)
                     return;
 
-                ReloadItemList();
+                if (InvokeRequired)
+                    BeginInvoke(ReloadItemList);
+                else
+                    ReloadItemList();
             }
         );
 
@@ -52,6 +55,10 @@ public partial class Main : DoubleBufferedControl
         panelSettings.Controls.Add(_enhanceSettingsView);
         panelSettings.Controls.Add(_magicOptionsSettingsView);
         panelSettings.Controls.Add(_attributeSettingsView);
+
+        // Wire up directly so EnhanceSettingsView is never out of sync regardless of OnEnterGame timing
+        EngineChanged += _enhanceSettingsView.View_EngineChanged;
+        ItemChanged += _enhanceSettingsView.View_ItemChanged;
     }
 
     #endregion Constructor
@@ -124,6 +131,12 @@ public partial class Main : DoubleBufferedControl
     {
         if (IsDisposed || Disposing)
             return;
+
+        if (InvokeRequired)
+        {
+            BeginInvoke(() => OnAlchemy(type));
+            return;
+        }
 
         ReloadItemList();
     }

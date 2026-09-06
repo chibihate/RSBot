@@ -70,6 +70,8 @@ public partial class ScriptRecorder : UIWindow
         EventManager.SubscribeEvent("OnSellItemRequest", new Action<byte, ushort, uint>(OnSellItemRequest));
         EventManager.SubscribeEvent("OnBuyItemToCosRequest", new Action<byte, byte, ushort, uint>(OnBuyItemToCos));
         EventManager.SubscribeEvent("OnSellItemFromCosRequest", new Action<byte, ushort, uint>(OnSellItemFromCos));
+        EventManager.SubscribeEvent("OnQuestAccepted", new Action<uint, string>(OnQuestAccepted));
+        EventManager.SubscribeEvent("OnQuestCompleted", new Action<uint, string>(OnQuestCompleted));
 
         //Use EventManager.FireEvent("AppendScriptCommand", "<name> <parameters>"); to add your own commands to the output
         EventManager.SubscribeEvent("AppendScriptCommand", new Action<string>(AppendScriptCommand));
@@ -301,6 +303,30 @@ public partial class ScriptRecorder : UIWindow
     {
         if (!SpawnManager.TryGetEntity<SpawnedBionic>(npcUniqueId, out var entity))
             return;
+    }
+
+    private void OnQuestAccepted(uint questId, string npcCodeName)
+    {
+        if (!_recording)
+            return;
+
+        var quest = Game.ReferenceManager.GetRefQuest(questId);
+        if (quest == null || string.IsNullOrEmpty(npcCodeName))
+            return;
+
+        txtScript.AppendText($"quest-accept {npcCodeName} {quest.CodeName}\n");
+    }
+
+    private void OnQuestCompleted(uint questId, string npcCodeName)
+    {
+        if (!_recording)
+            return;
+
+        var quest = Game.ReferenceManager.GetRefQuest(questId);
+        if (quest == null || string.IsNullOrEmpty(npcCodeName))
+            return;
+
+        txtScript.AppendText($"quest-complete {npcCodeName} {quest.CodeName}\n");
     }
 
     private void OnTeleportComplete()

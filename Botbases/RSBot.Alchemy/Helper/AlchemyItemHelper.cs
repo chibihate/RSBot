@@ -104,7 +104,7 @@ internal class AlchemyItemHelper
     public static IEnumerable<InventoryItem> GetStonesByGroup(InventoryItem targetItem, string name)
     {
         return Game.Player.Inventory.Where(i =>
-            i.Record.Desc1 == name && i.Record.ItemClass == targetItem.Record.Degree
+            i.Record.Desc1 == name && i.Record.ItemClass == targetItem.Record.Degree && i.Amount > 0
         );
     }
 
@@ -116,7 +116,7 @@ internal class AlchemyItemHelper
     /// <returns></returns>
     public static IEnumerable<InventoryItem> GetStonesByGroup(byte level, string name)
     {
-        return Game.Player.Inventory.Where(i => i.Record.Desc1 == name && i.Record.ItemClass == level);
+        return Game.Player.Inventory.Where(i => i.Record.Desc1 == name && i.Record.ItemClass == level && i.Amount > 0);
     }
 
     /// <summary>
@@ -177,6 +177,24 @@ internal class AlchemyItemHelper
             return Game.Player.Inventory.GetItems(new TypeIdFilter(3, 3, 10, 1));
 
         return default;
+    }
+
+    /// <summary>
+    ///     Gets the current value of a magic option group on an item (e.g. Lucky times for MATTR_LUCK).
+    /// </summary>
+    public static uint GetMagicOptionValue(InventoryItem inventoryItem, string materialGroup)
+    {
+        if (inventoryItem?.MagicOptions == null)
+            return 0;
+
+        foreach (var i in inventoryItem.MagicOptions)
+        {
+            var option = Game.ReferenceManager.GetMagicOption(i.Id);
+            if (option != null && option.Group == materialGroup)
+                return i.Value;
+        }
+
+        return 0;
     }
 
     /// <summary>

@@ -6,4 +6,5 @@ internal enum StatisticsGroup
     Loot,
     Enemy,
     Bot,
+    Alchemy,
 }

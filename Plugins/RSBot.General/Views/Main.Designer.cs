@@ -70,6 +70,7 @@
             checkEnableAutoLogin = new SDUI.Controls.CheckBox();
             comboCharacter = new SDUI.Controls.ComboBox();
             btnAutoLoginSettings = new SDUI.Controls.Button();
+            btnLogin = new SDUI.Controls.Button();
             btnBrowseSilkroadPath = new SDUI.Controls.Button();
             txtSilkroadPath = new SDUI.Controls.TextBox();
             groupBox5 = new SDUI.Controls.GroupBox();
@@ -669,6 +670,7 @@
             autoLoginTopPanel.Controls.Add(comboAccounts);
             autoLoginTopPanel.Controls.Add(label7);
             autoLoginTopPanel.Controls.Add(label4);
+            autoLoginTopPanel.Controls.Add(btnLogin);
             autoLoginTopPanel.Controls.Add(checkEnableAutoLogin);
             autoLoginTopPanel.Controls.Add(comboCharacter);
             autoLoginTopPanel.Controls.Add(btnAutoLoginSettings);
@@ -773,7 +775,21 @@
             btnAutoLoginSettings.Text = "Setup";
             btnAutoLoginSettings.UseVisualStyleBackColor = true;
             btnAutoLoginSettings.Click += btnAutoLoginSettings_Click;
-            // 
+            //
+            // btnLogin
+            //
+            btnLogin.Color = System.Drawing.Color.Transparent;
+            btnLogin.Location = new System.Drawing.Point(3, 84);
+            btnLogin.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
+            btnLogin.Name = "btnLogin";
+            btnLogin.Radius = 6;
+            btnLogin.ShadowDepth = 4F;
+            btnLogin.Size = new System.Drawing.Size(70, 31);
+            btnLogin.TabIndex = 3;
+            btnLogin.Text = "Login";
+            btnLogin.UseVisualStyleBackColor = true;
+            btnLogin.Click += btnLogin_Click;
+            //
             // btnBrowseSilkroadPath
             // 
             btnBrowseSilkroadPath.Color = System.Drawing.Color.Transparent;
@@ -998,6 +1014,7 @@
         private SDUI.Controls.ComboBox comboAccounts;
         private SDUI.Controls.CheckBox checkEnableAutoLogin;
         private SDUI.Controls.Button btnAutoLoginSettings;
+        private SDUI.Controls.Button btnLogin;
         private SDUI.Controls.TextBox txtStaticCaptcha;
         private SDUI.Controls.Label label5;
         private SDUI.Controls.CheckBox checkEnableStaticCaptcha;

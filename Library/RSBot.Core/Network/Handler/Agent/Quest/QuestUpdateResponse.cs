@@ -53,6 +53,9 @@ internal class QuestUpdateResponse : IPacketHandler
             Log.Notify($"Remove quest [{quest.GetTranslatedName()}");
 
             Game.Player.QuestLog.ActiveQuests.Remove(questId);
+
+            var npcCodeName = Game.Player.State.DialogState?.Npc?.Record?.CodeName ?? string.Empty;
+            EventManager.FireEvent("OnQuestCompleted", questId, npcCodeName);
         }
 
         if (type == QuestUpdateType.Add)
@@ -61,6 +64,9 @@ internal class QuestUpdateResponse : IPacketHandler
             Game.Player.QuestLog.ActiveQuests.TryAdd(questId, activeQuest);
 
             Log.Notify($"Added quest [{activeQuest.Quest.GetTranslatedName()}");
+
+            var npcCodeName = Game.Player.State.DialogState?.Npc?.Record?.CodeName ?? string.Empty;
+            EventManager.FireEvent("OnQuestAccepted", questId, npcCodeName);
         }
 
         if (type == QuestUpdateType.Update)
