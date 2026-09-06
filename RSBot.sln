@@ -81,9 +81,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "RSBot.FileSystem", "Library
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "RSBot.NavMeshApi", "Library\RSBot.NavMeshApi\RSBot.NavMeshApi.csproj", "{E4DC5C65-9956-4696-9B89-043B20029EAA}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "RSBot.AutoScripts", "Plugins\RSBot.AutoScripts\RSBot.AutoScripts.csproj", "{3BC38594-1F4F-4534-9DFC-DC59AF66EEF0}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "RSBot.Scripts", "Plugins\RSBot.Scripts\RSBot.Scripts.csproj", "{3BC38594-1F4F-4534-9DFC-DC59AF66EEF0}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RSBot.Controller", "Plugins\RSBot.Controller\RSBot.Controller.csproj", "{51EC6AEB-79A7-4293-9977-640C20B913A0}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RSBot.Repetition", "Plugins\RSBot.Repetition\RSBot.Repetition.csproj", "{51EC6AEB-79A7-4293-9977-640C20B913A0}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -407,6 +407,18 @@ Global
 		{51EC6AEB-79A7-4293-9977-640C20B913A0}.Release|x64.Build.0 = Release|Any CPU
 		{51EC6AEB-79A7-4293-9977-640C20B913A0}.Release|x86.ActiveCfg = Release|Any CPU
 		{51EC6AEB-79A7-4293-9977-640C20B913A0}.Release|x86.Build.0 = Release|Any CPU
+		{A1B2C3D4-E5F6-7890-ABCD-EF1234567890}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A1B2C3D4-E5F6-7890-ABCD-EF1234567890}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A1B2C3D4-E5F6-7890-ABCD-EF1234567890}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{A1B2C3D4-E5F6-7890-ABCD-EF1234567890}.Debug|x64.Build.0 = Debug|Any CPU
+		{A1B2C3D4-E5F6-7890-ABCD-EF1234567890}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{A1B2C3D4-E5F6-7890-ABCD-EF1234567890}.Debug|x86.Build.0 = Debug|Any CPU
+		{A1B2C3D4-E5F6-7890-ABCD-EF1234567890}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A1B2C3D4-E5F6-7890-ABCD-EF1234567890}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A1B2C3D4-E5F6-7890-ABCD-EF1234567890}.Release|x64.ActiveCfg = Release|Any CPU
+		{A1B2C3D4-E5F6-7890-ABCD-EF1234567890}.Release|x64.Build.0 = Release|Any CPU
+		{A1B2C3D4-E5F6-7890-ABCD-EF1234567890}.Release|x86.ActiveCfg = Release|Any CPU
+		{A1B2C3D4-E5F6-7890-ABCD-EF1234567890}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -1,6 +1,6 @@
 using RSBot.Core;
 
-namespace RSBot.Controller;
+namespace RSBot.Repetition;
 
 internal static class AppService
 {
@@ -10,6 +10,6 @@ internal static class AppService
     {
         Controller = new ControllerService();
         Controller.Initialize();
-        Log.Debug("[Controller] Plugin initialized.");
+        Log.Debug("[Repetition] Plugin initialized.");
     }
 }

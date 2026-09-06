@@ -1,6 +1,6 @@
 using System.Windows.Forms;
 
-namespace RSBot.Controller.Views;
+namespace RSBot.Repetition.Views;
 
 partial class Main
 {

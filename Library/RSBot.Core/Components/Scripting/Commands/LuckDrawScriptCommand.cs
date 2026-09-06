@@ -14,8 +14,8 @@ internal class LuckDrawScriptCommand : IScriptCommand
 
     public Dictionary<string, string> Arguments => new()
     {
-        { "Runs", "Number of times to spin the luck draw" },
         { "Delay", "Delay in milliseconds between each spin" },
+        { "Runs", "Number of times to spin the luck draw" },
     };
 
     #endregion Properties

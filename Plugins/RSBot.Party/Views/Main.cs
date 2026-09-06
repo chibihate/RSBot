@@ -424,7 +424,7 @@ public partial class Main : DoubleBufferedControl
             var limit = 0;
             var paramIndex = skill.Record.Params.FindIndex(p => p == 1819175795);
 
-            if (paramIndex != -1)
+            if (paramIndex != -1 && paramIndex + 3 < skill.Record.Params.Count)
                 limit = skill.Record.Params[paramIndex + 3];
 
             var count = _buffings.Count(p => p.Group == _selectedBuffingGroup.Text && p.Buffs.Any(v => v == skill.Id));

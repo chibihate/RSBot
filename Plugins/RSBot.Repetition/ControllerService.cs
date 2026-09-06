@@ -1,13 +1,14 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading;
-using RSBot.Controller.Models;
+using RSBot.Repetition.Models;
 using RSBot.Core;
 using RSBot.Core.Components;
 using RSBot.Core.Event;
 
-namespace RSBot.Controller;
+namespace RSBot.Repetition;
 
 internal class ControllerService
 {
@@ -29,20 +30,18 @@ internal class ControllerService
     {
         EventManager.SubscribeEvent("OnLoadCharacter", OnLoadCharacter);
         EventManager.SubscribeEvent("OnStopBot", OnBotStopped);
-        EventManager.SubscribeEvent("OnAutoScriptsStopped", OnAutoScriptsStopped);
     }
 
     public void Start()
     {
         if (IsRunning) return;
 
-        // Reset statuses for accounts not yet done
         foreach (var a in Accounts.Where(a => a.Status != AccountStatus.Done))
             a.Status = AccountStatus.Pending;
 
         CurrentIndex = 0;
         _cts = new CancellationTokenSource();
-        _thread = new Thread(() => Loop(_cts.Token)) { IsBackground = true, Name = "ControllerThread" };
+        _thread = new Thread(() => Loop(_cts.Token)) { IsBackground = true, Name = "RepetitionThread" };
         _thread.Start();
     }
 
@@ -51,7 +50,8 @@ internal class ControllerService
         _cts?.Cancel();
         _characterLoaded.Set();
         _botStopped.Set();
-        Log.Notify("[Controller] Stop requested.");
+        ScriptManager.Stop();
+        Log.Notify("[Repetition] Stop requested.");
     }
 
     private void OnLoadCharacter()
@@ -62,14 +62,11 @@ internal class ControllerService
 
     private void OnBotStopped()
     {
-        if (_state == State.BotRunning)
+        if (_state == State.BotRunning && !ScriptManager.Running)
+        {
             _botStopped.Set();
-    }
-
-    private void OnAutoScriptsStopped()
-    {
-        if (_state == State.BotRunning)
-            _botStopped.Set();
+            ScriptManager.Stop();
+        }
     }
 
     private void Loop(CancellationToken ct)
@@ -82,7 +79,7 @@ internal class ControllerService
                 entry.Status = AccountStatus.Running;
                 FireRefresh();
 
-                Log.Notify($"[Controller] Account '{entry.Username}' ({CurrentIndex + 1}/{Accounts.Count})");
+                Log.Notify($"[Repetition] Account '{entry.Username}' ({CurrentIndex + 1}/{Accounts.Count})");
 
                 RunForAccount(entry, ct);
 
@@ -93,11 +90,11 @@ internal class ControllerService
             }
 
             if (!ct.IsCancellationRequested)
-                Log.Notify("[Controller] All accounts completed.");
+                Log.Notify("[Repetition] All accounts completed.");
         }
         catch (OperationCanceledException)
         {
-            Log.Notify("[Controller] Stopped.");
+            Log.Notify("[Repetition] Stopped.");
         }
         catch (Exception ex)
         {
@@ -114,59 +111,55 @@ internal class ControllerService
     {
         try
         {
-            // Step 1: Select account + request single login mode
             SelectAccount(entry.Username);
             EventManager.FireEvent("OnRequestSingleLoginMode");
 
-            // Step 2: Start client
             _characterLoaded.Reset();
             _state = State.WaitingForLogin;
 
-            Log.Notify("[Controller] Starting client...");
+            Log.Notify("[Repetition] Starting client...");
             Game.Start();
             ClientManager.Start().GetAwaiter().GetResult();
 
-            // Step 3: Wait for character to load (5 min timeout)
-            Log.Notify("[Controller] Waiting for character to enter game...");
+            Log.Notify("[Repetition] Waiting for character to enter game...");
             if (!_characterLoaded.Wait(TimeSpan.FromMinutes(5), ct))
             {
-                Log.Warn("[Controller] Timeout waiting for login. Skipping account.");
+                Log.Warn("[Repetition] Timeout waiting for login. Skipping account.");
                 entry.Status = AccountStatus.Error;
                 Cleanup(ct);
                 return;
             }
 
-            // Step 4: Inject shared scripts into account's PlayerConfig, then wait delay
             _state = State.WaitingToStartBot;
-            if (ScriptPaths.Count > 0)
-            {
-                PlayerConfig.Set("RSBot.AutoScript.Enabled", true);
-                PlayerConfig.Set("RSBot.AutoScript.Scripts", string.Join(";", ScriptPaths));
-                PlayerConfig.Save();
-                Log.Notify($"[Controller] Injected {ScriptPaths.Count} script(s) into PlayerConfig.");
-            }
-
-            Log.Notify($"[Controller] Waiting {DelaySeconds}s before starting bot...");
+            Log.Notify($"[Repetition] Waiting {DelaySeconds}s before starting bot...");
             WaitSeconds(DelaySeconds, ct);
             ct.ThrowIfCancellationRequested();
 
-            // Step 5: Start AutoScripts
             _state = State.BotRunning;
             _botStopped.Reset();
-            Log.Notify("[Controller] Starting AutoScripts...");
-            EventManager.FireEvent("OnAutoScriptsStart");
+            Log.Notify($"[Repetition] Running {ScriptPaths.Count} script(s)...");
 
-            // Step 6: Wait for scripts to finish (no timeout — runs until done)
-            Log.Notify("[Controller] AutoScripts running. Waiting for completion...");
-            while (!_botStopped.IsSet && !ct.IsCancellationRequested)
-                _botStopped.Wait(TimeSpan.FromSeconds(1), ct);
+            foreach (var path in ScriptPaths)
+            {
+                if (_botStopped.IsSet || ct.IsCancellationRequested)
+                    break;
+
+                if (!File.Exists(path))
+                {
+                    Log.Warn($"[Repetition] Script not found, skipping: {Path.GetFileName(path)}");
+                    continue;
+                }
+
+                Log.Notify($"[Repetition] Running script: {Path.GetFileName(path)}");
+                ScriptManager.Load(path);
+                ScriptManager.RunScript(ignoreBotRunning: true);
+            }
 
             ct.ThrowIfCancellationRequested();
 
             entry.Status = AccountStatus.Done;
             FireRefresh();
 
-            // Step 7: Kill client and wait before next account
             Cleanup(ct);
         }
         catch (OperationCanceledException)
@@ -177,7 +170,7 @@ internal class ControllerService
         }
         catch (Exception ex)
         {
-            Log.Error($"[Controller] Error on account '{entry.Username}': {ex.Message}");
+            Log.Error($"[Repetition] Error on account '{entry.Username}': {ex.Message}");
             entry.Status = AccountStatus.Error;
             FireRefresh();
             Cleanup(ct);
@@ -214,7 +207,6 @@ internal class ControllerService
 
     private void FireRefresh() => EventManager.FireEvent("OnControllerRefresh");
 
-    // Reads account usernames from RSBot.General via reflection (no hard reference needed)
     public static IEnumerable<string> GetAvailableAccounts()
     {
         try
@@ -223,14 +215,14 @@ internal class ControllerService
                 .FirstOrDefault(a => a.GetName().Name == "RSBot.General");
             if (asm == null)
             {
-                Log.Warn("[Controller] RSBot.General assembly not found in AppDomain.");
+                Log.Warn("[Repetition] RSBot.General assembly not found in AppDomain.");
                 return Enumerable.Empty<string>();
             }
 
             var type = asm.GetType("RSBot.General.Components.Accounts");
             if (type == null)
             {
-                Log.Warn("[Controller] RSBot.General.Components.Accounts type not found.");
+                Log.Warn("[Repetition] RSBot.General.Components.Accounts type not found.");
                 return Enumerable.Empty<string>();
             }
 
@@ -238,14 +230,14 @@ internal class ControllerService
                 System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
             if (prop == null)
             {
-                Log.Warn("[Controller] SavedAccounts property not found on Accounts type.");
+                Log.Warn("[Repetition] SavedAccounts property not found on Accounts type.");
                 return Enumerable.Empty<string>();
             }
 
             var value = prop.GetValue(null);
             if (value is not System.Collections.IEnumerable list)
             {
-                Log.Warn($"[Controller] SavedAccounts is null or not IEnumerable (value={value}).");
+                Log.Warn($"[Repetition] SavedAccounts is null or not IEnumerable (value={value}).");
                 return Enumerable.Empty<string>();
             }
 
@@ -257,12 +249,12 @@ internal class ControllerService
                     result.Add(username);
             }
 
-            Log.Notify($"[Controller] Loaded {result.Count} account(s) from RSBot.General.");
+            Log.Notify($"[Repetition] Loaded {result.Count} account(s) from RSBot.General.");
             return result;
         }
         catch (Exception ex)
         {
-            Log.Error($"[Controller] GetAvailableAccounts failed: {ex.Message}");
+            Log.Error($"[Repetition] GetAvailableAccounts failed: {ex.Message}");
             return Enumerable.Empty<string>();
         }
     }

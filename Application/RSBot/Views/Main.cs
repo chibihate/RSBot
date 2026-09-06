@@ -410,6 +410,13 @@ public partial class Main : UIWindow
         scriptRecorder.Show();
     }
 
+    private void menuPlayerFollow_Click(object sender, EventArgs e)
+    {
+        var window = new PlayerFollowWindow();
+        window.FormClosed += (s, _) => ((Form)s).Dispose();
+        window.Show();
+    }
+
     private void menuPacketLogger_Click(object sender, EventArgs e)
     {
         var item = (ToolStripMenuItem)sender;

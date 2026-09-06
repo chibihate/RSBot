@@ -90,6 +90,7 @@ public class Bootstrap : IBotbase
     {
         Log.Warn(reason);
         Kernel.Bot.Stop();
+        PlayStopSound();
         MessageBox.Show(reason, "Alchemy Bot Stopped", MessageBoxButtons.OK, MessageBoxIcon.Warning);
     }
 
@@ -100,7 +101,22 @@ public class Bootstrap : IBotbase
     {
         Log.Notify(reason);
         Kernel.Bot.Stop();
+        PlayStopSound();
         MessageBox.Show(reason, "Alchemy Bot Stopped", MessageBoxButtons.OK, MessageBoxIcon.Information);
+    }
+
+    private static void PlayStopSound()
+    {
+        const string path = @"C:\Windows\Media\tada.wav";
+        if (!System.IO.File.Exists(path))
+            return;
+
+        try
+        {
+            using var player = new System.Media.SoundPlayer(path);
+            player.Play();
+        }
+        catch { }
     }
 
     /// <inheritdoc />

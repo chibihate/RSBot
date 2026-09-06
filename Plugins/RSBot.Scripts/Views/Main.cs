@@ -3,19 +3,24 @@ using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Windows.Forms;
-using RSBot.AutoScripts;
+using RSBot.Scripts;
 using RSBot.Core;
 using RSBot.Core.Event;
 using SDUI.Controls;
 
-namespace RSBot.AutoScripts.Views;
+namespace RSBot.Scripts.Views;
 
 [ToolboxItem(false)]
 public partial class Main : DoubleBufferedControl
 {
-    private const string ConfigKeyScripts = "RSBot.AutoScript.Scripts";
-    private const string ConfigKeyLoops   = "RSBot.AutoScript.Loops";
-    private const string ConfigKeyDelay   = "RSBot.AutoScript.LoopDelay";
+    private const string ConfigKeyScripts  = "RSBot.AutoScript.Scripts";
+    private const string ConfigKeyLoops    = "RSBot.AutoScript.Loops";
+    private const string ConfigKeyDelay    = "RSBot.AutoScript.LoopDelay";
+    private const string ConfigKeySound    = "RSBot.AutoScript.SoundPath";
+    private const string ConfigKeyScript1  = "RSBot.Scripts.Script1Path";
+    private const string ConfigKeyScript2  = "RSBot.Scripts.Script2Path";
+    private const string ConfigKeyScript3  = "RSBot.Scripts.Script3Path";
+    private const string DefaultSoundPath  = @"C:\Windows\Media\Ring10.wav";
 
     public Main()
     {
@@ -29,6 +34,10 @@ public partial class Main : DoubleBufferedControl
         EventManager.SubscribeEvent("OnAutoScriptRunning", new Action<int>(OnAutoScriptRunning));
         EventManager.SubscribeEvent("OnAutoScriptsStopped", OnAutoScriptsStopped);
         EventManager.SubscribeEvent("OnStopBot", new Action(OnBotStopped));
+
+        AppService.Script1.OnStopped = () => UpdateSlotButtons(1, false);
+        AppService.Script2.OnStopped = () => UpdateSlotButtons(2, false);
+        AppService.Script3.OnStopped = () => UpdateSlotButtons(3, false);
     }
 
     private void OnAutoScriptRunning(int index)
@@ -79,10 +88,38 @@ public partial class Main : DoubleBufferedControl
         lblStatus.Text = running ? lblStatus.Text : "Status: Idle";
     }
 
+    private void UpdateSlotButtons(int slot, bool running)
+    {
+        if (IsDisposed || Disposing) return;
+
+        void Update()
+        {
+            switch (slot)
+            {
+                case 1:
+                    btnScript1Play.Enabled = !running;
+                    btnScript1Stop.Enabled = running;
+                    break;
+                case 2:
+                    btnScript2Play.Enabled = !running;
+                    btnScript2Stop.Enabled = running;
+                    break;
+                case 3:
+                    btnScript3Play.Enabled = !running;
+                    btnScript3Stop.Enabled = running;
+                    break;
+            }
+        }
+
+        if (InvokeRequired) BeginInvoke(Update);
+        else Update();
+    }
+
     public void LoadSettings()
     {
         nudLoops.Value = Math.Max(0, PlayerConfig.Get(ConfigKeyLoops, 1));
         nudDelay.Value = Math.Max(0, PlayerConfig.Get(ConfigKeyDelay, 0));
+        txtSoundPath.Text = PlayerConfig.Get(ConfigKeySound, DefaultSoundPath);
 
         var raw = PlayerConfig.Get(ConfigKeyScripts, string.Empty);
         lstScripts.Items.Clear();
@@ -97,14 +134,29 @@ public partial class Main : DoubleBufferedControl
             }
         }
 
+        txtScript1Path.Text = PlayerConfig.Get(ConfigKeyScript1, string.Empty);
+        txtScript2Path.Text = PlayerConfig.Get(ConfigKeyScript2, string.Empty);
+        txtScript3Path.Text = PlayerConfig.Get(ConfigKeyScript3, string.Empty);
+
         ApplyOptions();
         SetRunningState(AppService.Bot.IsRunning);
+        UpdateSlotButtons(1, AppService.Script1.IsRunning);
+        UpdateSlotButtons(2, AppService.Script2.IsRunning);
+        UpdateSlotButtons(3, AppService.Script3.IsRunning);
     }
 
     private void ApplyOptions()
     {
         AppService.Bot.LoopCount = (int)nudLoops.Value;
         AppService.Bot.LoopDelay = (int)nudDelay.Value * 1000;
+        AppService.Bot.SoundFilePath = txtSoundPath.Text.Trim();
+    }
+
+    private void ApplyOptionsToSlot(AutoScriptsService svc)
+    {
+        svc.LoopCount = (int)nudLoops.Value;
+        svc.LoopDelay = (int)nudDelay.Value * 1000;
+        svc.SoundFilePath = txtSoundPath.Text.Trim();
     }
 
     private void SaveSettings()
@@ -112,17 +164,43 @@ public partial class Main : DoubleBufferedControl
         PlayerConfig.Set(ConfigKeyScripts, string.Join(";", AppService.Bot.ScriptPaths));
         PlayerConfig.Set(ConfigKeyLoops, (int)nudLoops.Value);
         PlayerConfig.Set(ConfigKeyDelay, (int)nudDelay.Value);
+        PlayerConfig.Set(ConfigKeySound, txtSoundPath.Text.Trim());
+        PlayerConfig.Set(ConfigKeyScript1, txtScript1Path.Text.Trim());
+        PlayerConfig.Set(ConfigKeyScript2, txtScript2Path.Text.Trim());
+        PlayerConfig.Set(ConfigKeyScript3, txtScript3Path.Text.Trim());
         PlayerConfig.Save();
         ApplyOptions();
     }
 
     private void nudOptions_ValueChanged(object sender, EventArgs e) => SaveSettings();
 
+    private void txtSoundPath_TextChanged(object sender, EventArgs e)
+    {
+        AppService.Bot.SoundFilePath = txtSoundPath.Text.Trim();
+        SaveSettings();
+    }
+
+    private void btnBrowseSound_Click(object sender, EventArgs e)
+    {
+        using var dlg = new OpenFileDialog
+        {
+            Title = "Select completion sound",
+            Filter = "WAV files (*.wav)|*.wav|All Files (*.*)|*.*",
+            InitialDirectory = Path.GetDirectoryName(txtSoundPath.Text) ?? @"C:\Windows\Media",
+        };
+
+        if (!string.IsNullOrWhiteSpace(txtSoundPath.Text) && File.Exists(txtSoundPath.Text))
+            dlg.FileName = txtSoundPath.Text;
+
+        if (dlg.ShowDialog() != DialogResult.OK) return;
+        txtSoundPath.Text = dlg.FileName;
+    }
+
     private void btnStart_Click(object sender, EventArgs e)
     {
         if (AppService.Bot.ScriptPaths.Count == 0)
         {
-            MessageBox.Show("Add at least one script to the list.", "Auto Scripts",
+            MessageBox.Show("Add at least one script to the list.", "Scripts",
                 MessageBoxButtons.OK, MessageBoxIcon.Warning);
             return;
         }
@@ -177,7 +255,6 @@ public partial class Main : DoubleBufferedControl
     {
         var idx = lstScripts.SelectedIndex;
         if (idx <= 0) return;
-
         SwapItems(idx, idx - 1);
         lstScripts.SelectedIndex = idx - 1;
         SaveSettings();
@@ -187,7 +264,6 @@ public partial class Main : DoubleBufferedControl
     {
         var idx = lstScripts.SelectedIndex;
         if (idx < 0 || idx >= lstScripts.Items.Count - 1) return;
-
         SwapItems(idx, idx + 1);
         lstScripts.SelectedIndex = idx + 1;
         SaveSettings();
@@ -222,6 +298,76 @@ public partial class Main : DoubleBufferedControl
         lstScripts.Items[idx] = Path.GetFileName(dlg.FileName);
         SaveSettings();
     }
+
+    // ── Script slot handlers ──────────────────────────────────────────────────
+
+    private void BrowseScriptSlot(System.Windows.Forms.TextBox txt)
+    {
+        using var dlg = new OpenFileDialog
+        {
+            Title = "Select Script",
+            Filter = "RSBot Script (*.rbs)|*.rbs|All Files (*.*)|*.*",
+            InitialDirectory = string.IsNullOrWhiteSpace(txt.Text)
+                ? Path.Combine(Kernel.BasePath, "Data", "Scripts")
+                : (Path.GetDirectoryName(txt.Text) ?? Path.Combine(Kernel.BasePath, "Data", "Scripts")),
+        };
+
+        if (!string.IsNullOrWhiteSpace(txt.Text) && File.Exists(txt.Text))
+            dlg.FileName = txt.Text;
+
+        if (dlg.ShowDialog() != DialogResult.OK) return;
+        txt.Text = dlg.FileName;
+        SaveSettings();
+    }
+
+    private void PlayScriptSlot(AutoScriptsService svc, string path, int slot)
+    {
+        if (string.IsNullOrWhiteSpace(path))
+        {
+            MessageBox.Show($"Set a script path for Script {slot} first.", "Scripts",
+                MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            return;
+        }
+
+        svc.ScriptPaths.Clear();
+        svc.ScriptPaths.Add(path);
+        ApplyOptionsToSlot(svc);
+        svc.Start();
+        UpdateSlotButtons(slot, true);
+    }
+
+    private void btnScript1Browse_Click(object sender, EventArgs e) => BrowseScriptSlot(txtScript1Path);
+    private void btnScript2Browse_Click(object sender, EventArgs e) => BrowseScriptSlot(txtScript2Path);
+    private void btnScript3Browse_Click(object sender, EventArgs e) => BrowseScriptSlot(txtScript3Path);
+
+    private void btnScript1Play_Click(object sender, EventArgs e)
+        => PlayScriptSlot(AppService.Script1, txtScript1Path.Text.Trim(), 1);
+
+    private void btnScript2Play_Click(object sender, EventArgs e)
+        => PlayScriptSlot(AppService.Script2, txtScript2Path.Text.Trim(), 2);
+
+    private void btnScript3Play_Click(object sender, EventArgs e)
+        => PlayScriptSlot(AppService.Script3, txtScript3Path.Text.Trim(), 3);
+
+    private void btnScript1Stop_Click(object sender, EventArgs e)
+    {
+        AppService.Script1.Stop();
+        UpdateSlotButtons(1, false);
+    }
+
+    private void btnScript2Stop_Click(object sender, EventArgs e)
+    {
+        AppService.Script2.Stop();
+        UpdateSlotButtons(2, false);
+    }
+
+    private void btnScript3Stop_Click(object sender, EventArgs e)
+    {
+        AppService.Script3.Stop();
+        UpdateSlotButtons(3, false);
+    }
+
+    private void txtScriptPath_TextChanged(object sender, EventArgs e) => SaveSettings();
 
     protected override void Dispose(bool disposing)
     {

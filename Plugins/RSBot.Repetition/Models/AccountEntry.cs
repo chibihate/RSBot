@@ -1,4 +1,4 @@
-namespace RSBot.Controller.Models;
+namespace RSBot.Repetition.Models;
 
 public class AccountEntry
 {

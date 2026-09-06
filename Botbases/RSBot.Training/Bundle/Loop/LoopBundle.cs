@@ -70,9 +70,6 @@ internal class LoopBundle : IBundle
 
     public void Stop()
     {
-        if (ScriptManager.Running)
-            ScriptManager.Stop();
-
         if (ShoppingManager.Running)
             ShoppingManager.Stop();
 

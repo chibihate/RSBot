@@ -114,7 +114,7 @@ internal partial class Main : DoubleBufferedControl
         checkStayConnected.Checked = GlobalConfig.Get<bool>("RSBot.General.StayConnected");
         checkBoxBotTrayMinimized.Checked = GlobalConfig.Get<bool>("RSBot.General.TrayWhenMinimize");
         txtStaticCaptcha.Text = GlobalConfig.Get<string>("RSBot.General.StaticCaptcha");
-        checkEnableLoginDelay.Checked = GlobalConfig.Get<bool>("RSBot.General.EnableLoginDelay");
+        checkEnableLoginDelay.Checked = GlobalConfig.Get<bool>("RSBot.General.EnableLoginDelay", true);
         numLoginDelay.Value = GlobalConfig.Get("RSBot.General.LoginDelay", 3);
         checkWaitAfterDC.Checked = GlobalConfig.Get<bool>("RSBot.General.EnableWaitAfterDC");
         numWaitAfterDC.Value = GlobalConfig.Get("RSBot.General.WaitAfterDC", 3);

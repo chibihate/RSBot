@@ -1,4 +1,4 @@
-﻿namespace RSBot.AutoScripts.Models;
+﻿namespace RSBot.Scripts.Models;
 
 public class QuestEntry
 {

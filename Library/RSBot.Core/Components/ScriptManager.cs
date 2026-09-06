@@ -256,16 +256,28 @@ public class ScriptManager
     /// <returns></returns>
     private static Position ParsePosition(string[] args)
     {
-        if (
-            !float.TryParse(args[0], out var xOffset)
-            || !float.TryParse(args[1], out var yOffset)
-            || !float.TryParse(args[2], out var zOffset)
-            || !byte.TryParse(args[3], out var xSector)
-            || !byte.TryParse(args[4], out var ySector)
-        )
-            return default; //Invalid format
+        if (args.Length == 2)
+        {
+            if (!float.TryParse(args[0], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var x)
+                || !float.TryParse(args[1], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var y))
+                return default;
 
-        return new Position(xSector, ySector, xOffset, yOffset, zOffset);
+            return new Position(x, y);
+        }
+
+        if (args.Length >= 5)
+        {
+            if (!float.TryParse(args[0], out var xOffset)
+                || !float.TryParse(args[1], out var yOffset)
+                || !float.TryParse(args[2], out var zOffset)
+                || !byte.TryParse(args[3], out var xSector)
+                || !byte.TryParse(args[4], out var ySector))
+                return default;
+
+            return new Position(xSector, ySector, xOffset, yOffset, zOffset);
+        }
+
+        return default;
     }
 
     /// <summary>

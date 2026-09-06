@@ -4,13 +4,13 @@ using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Windows.Forms;
-using RSBot.Controller;
-using RSBot.Controller.Models;
+using RSBot.Repetition;
+using RSBot.Repetition.Models;
 using RSBot.Core;
 using RSBot.Core.Event;
 using SDUI.Controls;
 
-namespace RSBot.Controller.Views;
+namespace RSBot.Repetition.Views;
 
 [ToolboxItem(false)]
 public partial class Main : DoubleBufferedControl
@@ -44,7 +44,6 @@ public partial class Main : DoubleBufferedControl
         nudDelay.Value = GlobalConfig.Get(ConfigKeyDelay, 10);
         AppService.Controller.DelaySeconds = (int)nudDelay.Value;
 
-        // ── Account queue ──────────────────────────────────────────
         var rawAccounts = GlobalConfig.Get(ConfigKeyAccounts, string.Empty);
         AppService.Controller.Accounts.Clear();
         dgvAccounts.Rows.Clear();
@@ -68,7 +67,6 @@ public partial class Main : DoubleBufferedControl
             }
         }
 
-        // ── Shared script list ─────────────────────────────────────
         var rawScripts = GlobalConfig.Get(ConfigKeyScripts, string.Empty);
         AppService.Controller.ScriptPaths.Clear();
         lstScripts.Items.Clear();
@@ -114,22 +112,20 @@ public partial class Main : DoubleBufferedControl
     private void UpdateButtons()
     {
         var running = AppService.Controller.IsRunning;
-        btnStart.Text = running ? "Stop" : "Start";
-        btnAdd.Enabled    = !running;
-        btnRemove.Enabled = !running;
-        btnUp.Enabled     = !running;
-        btnDown.Enabled   = !running;
-        btnReset.Enabled  = !running;
-        btnReload.Enabled = !running;
-        btnClear.Enabled  = !running;
+        btnStart.Text           = running ? "Stop" : "Start";
+        btnAdd.Enabled          = !running;
+        btnRemove.Enabled       = !running;
+        btnUp.Enabled           = !running;
+        btnDown.Enabled         = !running;
+        btnReset.Enabled        = !running;
+        btnReload.Enabled       = !running;
+        btnClear.Enabled        = !running;
         btnScriptAdd.Enabled    = !running;
         btnScriptRemove.Enabled = !running;
         btnScriptUp.Enabled     = !running;
         btnScriptDown.Enabled   = !running;
-        nudDelay.Enabled  = !running;
+        nudDelay.Enabled        = !running;
     }
-
-    // ── Account queue handlers ─────────────────────────────────────────────
 
     private void btnStart_Click(object sender, EventArgs e)
     {
@@ -142,7 +138,7 @@ public partial class Main : DoubleBufferedControl
         {
             if (AppService.Controller.Accounts.Count == 0)
             {
-                MessageBox.Show("Add at least one account to the queue.", "Controller",
+                MessageBox.Show("Add at least one account to the queue.", "Repetition",
                     MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
@@ -263,8 +259,6 @@ public partial class Main : DoubleBufferedControl
         dgvAccounts.Rows[b].Cells[0].Value = usernameA;
         dgvAccounts.Rows[b].Cells[1].Value = statusA;
     }
-
-    // ── Shared script list handlers ────────────────────────────────────────
 
     private void btnScriptAdd_Click(object sender, EventArgs e)
     {

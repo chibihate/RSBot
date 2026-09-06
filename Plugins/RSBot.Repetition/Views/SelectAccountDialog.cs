@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using System.Windows.Forms;
 
-namespace RSBot.Controller.Views;
+namespace RSBot.Repetition.Views;
 
 internal class SelectAccountDialog : Form
 {

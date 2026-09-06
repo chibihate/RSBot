@@ -3,7 +3,7 @@ using RSBot.Core;
 using RSBot.Core.Components;
 using RSBot.Core.Plugins;
 
-namespace RSBot.Controller;
+namespace RSBot.Repetition;
 
 public class Bootstrap : IPlugin
 {
@@ -11,8 +11,8 @@ public class Bootstrap : IPlugin
 
     public string Author => "RSBot Team";
     public string Description => "Automates multi-account sessions: login, run bot, sort inventory, repeat.";
-    public string Name => "RSBot.Controller";
-    public string Title => "Controller";
+    public string Name => "RSBot.Repetition";
+    public string Title => "Repetition";
     public string Version => "1.0.0";
     public bool Enabled { get; set; }
     public bool DisplayAsTab => true;

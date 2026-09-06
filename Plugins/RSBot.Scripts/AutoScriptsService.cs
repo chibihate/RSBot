@@ -1,12 +1,13 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Media;
 using System.Threading;
 using RSBot.Core;
 using RSBot.Core.Components;
 using RSBot.Core.Event;
 
-namespace RSBot.AutoScripts;
+namespace RSBot.Scripts;
 
 internal class AutoScriptsService
 {
@@ -24,6 +25,15 @@ internal class AutoScriptsService
     /// <summary>Delay in milliseconds between loops.</summary>
     public int LoopDelay { get; set; } = 0;
 
+    /// <summary>Path to a .wav file played on normal completion. Empty = no sound.</summary>
+    public string SoundFilePath { get; set; } = string.Empty;
+
+    /// <summary>When true, fires the global OnAutoScriptsStopped event on completion (only for the main list service).</summary>
+    public bool FireGlobalEvents { get; set; } = true;
+
+    /// <summary>Called when the service finishes. Use for per-slot UI updates.</summary>
+    public Action OnStopped { get; set; }
+
     public void Start()
     {
         if (_running) return;
@@ -33,14 +43,14 @@ internal class AutoScriptsService
         _currentLoop = 0;
         _thread = new Thread(Loop) { IsBackground = true, Name = "AutoScriptThread" };
         _thread.Start();
-        Log.Notify("[AutoScripts] Started.");
+        Log.Notify("[Scripts] Started.");
     }
 
     public void Stop()
     {
         _running = false;
         ScriptManager.Stop();
-        Log.Notify("[AutoScripts] Stopped.");
+        Log.Notify("[Scripts] Stopped.");
     }
 
     private void Loop()
@@ -57,11 +67,10 @@ internal class AutoScriptsService
 
                 if (ScriptPaths.Count == 0)
                 {
-                    Log.Warn("[AutoScripts] No scripts configured.");
+                    Log.Warn("[Scripts] No scripts configured.");
                     break;
                 }
 
-                // Run all scripts for this loop iteration
                 _currentIndex = 0;
                 while (_running && _currentIndex < ScriptPaths.Count)
                 {
@@ -69,11 +78,11 @@ internal class AutoScriptsService
 
                     if (!File.Exists(path))
                     {
-                        Log.Warn($"[AutoScripts] Script not found, skipping: {path}");
+                        Log.Warn($"[Scripts] Script not found, skipping: {path}");
                     }
                     else
                     {
-                        Log.Notify($"[AutoScripts] [{LoopLabel}] Script {_currentIndex + 1}/{ScriptPaths.Count}: {Path.GetFileName(path)}");
+                        Log.Notify($"[Scripts] [{LoopLabel}] Script {_currentIndex + 1}/{ScriptPaths.Count}: {Path.GetFileName(path)}");
                         EventManager.FireEvent("OnAutoScriptRunning", _currentIndex);
 
                         ScriptManager.Load(path);
@@ -88,18 +97,17 @@ internal class AutoScriptsService
 
                 _currentLoop++;
 
-                // Check if we've completed all loops
                 if (LoopCount > 0 && _currentLoop >= LoopCount)
                 {
-                    Log.Notify($"[AutoScripts] Completed {_currentLoop} loop(s).");
+                    Log.Notify($"[Scripts] Completed {_currentLoop} loop(s).");
+                    PlayCompletionSound();
                     break;
                 }
 
-                // Delay between loops
                 if (LoopDelay > 0)
                 {
                     var loopStr = LoopCount == 0 ? "inf" : LoopCount.ToString();
-                    Log.Notify($"[AutoScripts] Loop {_currentLoop}/{loopStr} done. Waiting {LoopDelay / 1000}s before next loop...");
+                    Log.Notify($"[Scripts] Loop {_currentLoop}/{loopStr} done. Waiting {LoopDelay / 1000}s before next loop...");
                     var elapsed = 0;
                     while (_running && elapsed < LoopDelay)
                     {
@@ -110,7 +118,7 @@ internal class AutoScriptsService
                 else
                 {
                     var loopStr = LoopCount == 0 ? "inf" : LoopCount.ToString();
-                    Log.Notify($"[AutoScripts] Loop {_currentLoop}/{loopStr} done. Starting next loop...");
+                    Log.Notify($"[Scripts] Loop {_currentLoop}/{loopStr} done. Starting next loop...");
                 }
             }
         }
@@ -122,7 +130,26 @@ internal class AutoScriptsService
         finally
         {
             _running = false;
-            EventManager.FireEvent("OnAutoScriptsStopped");
+            if (FireGlobalEvents)
+                EventManager.FireEvent("OnAutoScriptsStopped");
+            OnStopped?.Invoke();
+        }
+    }
+
+    private void PlayCompletionSound()
+    {
+        var path = SoundFilePath;
+        if (string.IsNullOrWhiteSpace(path) || !File.Exists(path))
+            return;
+
+        try
+        {
+            using var player = new SoundPlayer(path);
+            player.Play();
+        }
+        catch (Exception ex)
+        {
+            Log.Warn($"[Scripts] Could not play sound: {ex.Message}");
         }
     }
 

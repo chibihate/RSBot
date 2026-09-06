@@ -9,6 +9,7 @@ namespace RSBot.Core.Event;
 public class EventManager
 {
     private static readonly List<(string name, Delegate handler)> _listeners = new();
+    private static readonly object _listenersLock = new();
 
     /// <summary>
     ///     Registers the event.
@@ -20,7 +21,8 @@ public class EventManager
         if (handler == null)
             return;
 
-        _listeners.Add((name, handler));
+        lock (_listenersLock)
+            _listeners.Add((name, handler));
     }
 
     /// <summary>
@@ -33,7 +35,8 @@ public class EventManager
         if (handler == null)
             return;
 
-        _listeners.Add((name, handler));
+        lock (_listenersLock)
+            _listeners.Add((name, handler));
     }
 
     /// <summary>
@@ -45,17 +48,17 @@ public class EventManager
     {
         try
         {
-            var targets = (
-                from o in _listeners
-                where o.name == name && o.handler.Method.GetParameters().Length == parameters.Length
-                select o.handler
-            ).ToArray();
+            (string name, Delegate handler)[] targets;
+            lock (_listenersLock)
+                targets = _listeners
+                    .Where(o => o.name == name && o.handler.Method.GetParameters().Length == parameters.Length)
+                    .ToArray();
 
             foreach (var target in targets)
                 if (Thread.CurrentThread.Name == "Network.PacketProcessor")
-                    Task.Run(() => target.DynamicInvoke(parameters));
+                    Task.Run(() => target.handler.DynamicInvoke(parameters));
                 else
-                    target.DynamicInvoke(parameters);
+                    target.handler.DynamicInvoke(parameters);
         }
         catch (Exception e)
         {

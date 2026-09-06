@@ -36,8 +36,3 @@ if ($Clean) {
     Move-Item ".\temp\User" ".\Build\User" -ErrorAction SilentlyContinue > $null
     Remove-Item -Recurse -Force ".\temp" -ErrorAction SilentlyContinue > $null
 }
-
-if (!$DoNotStart) {
-    Write-Output "Starting RSBot..."
-    & ".\Build\RSBot.exe"
-}

@@ -4,14 +4,14 @@ using RSBot.Core.Components;
 using RSBot.Core.Event;
 using RSBot.Core.Plugins;
 
-namespace RSBot.AutoScripts;
+namespace RSBot.Scripts;
 
 public class Bootstrap : IPlugin
 {
     public string Author => "RSBot Team";
     public string Description => "Runs multiple scripts in sequence.";
-    public string Name => "RSBot.AutoScripts";
-    public string Title => "Auto Scripts";
+    public string Name => "RSBot.Scripts";
+    public string Title => "Scripts";
     public string Version => "1.0.0";
     public bool Enabled { get; set; }
     public bool DisplayAsTab => true;
@@ -22,10 +22,14 @@ public class Bootstrap : IPlugin
 
     public void Initialize()
     {
-        AppService.Bot = new AutoScriptsService();
+        AppService.Bot = new AutoScriptsService { FireGlobalEvents = true };
+        AppService.Script1 = new AutoScriptsService { FireGlobalEvents = false };
+        AppService.Script2 = new AutoScriptsService { FireGlobalEvents = false };
+        AppService.Script3 = new AutoScriptsService { FireGlobalEvents = false };
+
         EventManager.SubscribeEvent("OnAutoScriptsStart", OnAutoScriptsStart);
         EventManager.SubscribeEvent("OnAutoScriptsStop", () => AppService.Bot.Stop());
-        Log.Debug("[AutoScripts] Plugin initialized.");
+        Log.Debug("[Scripts] Plugin initialized.");
     }
 
     public void OnLoadCharacter()
@@ -33,10 +37,6 @@ public class Bootstrap : IPlugin
         AppService.View?.LoadSettings();
     }
 
-    /// <summary>
-    /// Fired by Controller (or any external caller) to start scripts with injected config.
-    /// Reads script paths, loop count and delay directly from PlayerConfig.
-    /// </summary>
     private void OnAutoScriptsStart()
     {
         var raw = PlayerConfig.Get("RSBot.AutoScript.Scripts", string.Empty);

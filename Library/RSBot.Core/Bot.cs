@@ -89,6 +89,15 @@ public class Bot
     public void Stop()
     {
         ScriptManager.Stop();
+        StopBotOnly();
+    }
+
+    /// <summary>
+    ///     Stops the bot tick loop without terminating the active script runner.
+    ///     Use this when stopping training from within a script command.
+    /// </summary>
+    public void StopBotOnly()
+    {
         ShoppingManager.Stop();
         PickupManager.Stop();
 
