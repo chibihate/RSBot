@@ -1,0 +1,10 @@
+quest-complete NPC_DAILY_QUEST_1 QNO_DAILY_1_1
+wait 1000
+quest-complete NPC_DAILY_QUEST_1 QNO_DAILY_1_2
+wait 1000
+quest-complete NPC_DAILY_QUEST_1 QNO_DAILY_1_3
+wait 1000
+quest-complete NPC_DAILY_QUEST_1 QNO_DAILY_1_4
+wait 1000
+quest-complete NPC_DAILY_QUEST_1 QNO_DAILY_1_5
+wait 1000
