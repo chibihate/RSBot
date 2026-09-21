@@ -45,10 +45,22 @@ public struct Position
     /// <value>
     ///     The x coordinate.
     /// </value>
-    public float X =>
-        XOffset == 0 ? 0
-        : Region.IsDungeon ? XOffset / 10
-        : (Region.X - 135) * 192 + XOffset / 10;
+    public float X
+    {
+        get
+        {
+            if (XOffset == 0) return 0;
+            if (Region.IsDungeon) return XOffset / 10;
+
+            // XOffset may exceed [0, 1920) when Region updates before offset normalizes,
+            // or when client-side interpolation crosses a sector boundary.
+            // Only normalize positive overflow; negative XOffset is valid and correct.
+            var sectorX = (int)Region.X;
+            var offset = XOffset;
+            while (offset >= 1920f) { offset -= 1920f; sectorX++; }
+            return (sectorX - 135) * 192 + offset / 10;
+        }
+    }
 
     /// <summary>
     ///     Gets the y coordinate.
@@ -56,10 +68,19 @@ public struct Position
     /// <value>
     ///     The y coordinate.
     /// </value>
-    public float Y =>
-        YOffset == 0 ? 0
-        : Region.IsDungeon ? YOffset / 10
-        : (Region.Y - 92) * 192 + YOffset / 10;
+    public float Y
+    {
+        get
+        {
+            if (YOffset == 0) return 0;
+            if (Region.IsDungeon) return YOffset / 10;
+
+            var sectorY = (int)Region.Y;
+            var offset = YOffset;
+            while (offset >= 1920f) { offset -= 1920f; sectorY++; }
+            return (sectorY - 92) * 192 + offset / 10;
+        }
+    }
 
     /// <summary>
     ///     Gets offset from x sector.

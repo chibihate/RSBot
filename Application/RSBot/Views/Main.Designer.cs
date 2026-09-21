@@ -58,6 +58,7 @@ namespace RSBot.Views
             toolsToolStripMenuItem = new ToolStripMenuItem();
             menuScriptRecorder = new ToolStripMenuItem();
             menuPlayerFollow = new ToolStripMenuItem();
+            menuAutoSelect = new ToolStripMenuItem();
             menuPluginManager = new ToolStripMenuItem();
             menuPacketLogger = new ToolStripMenuItem();
             menuPlugins = new ToolStripMenuItem();
@@ -345,7 +346,7 @@ namespace RSBot.Views
             // 
             // toolsToolStripMenuItem
             // 
-            toolsToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { menuScriptRecorder, menuPlayerFollow, menuPluginManager, menuPacketLogger });
+            toolsToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { menuScriptRecorder, menuPlayerFollow, menuAutoSelect, menuPluginManager, menuPacketLogger });
             toolsToolStripMenuItem.ForeColor = System.Drawing.Color.FromArgb(0, 0, 0);
             toolsToolStripMenuItem.Name = "toolsToolStripMenuItem";
             toolsToolStripMenuItem.Size = new System.Drawing.Size(148, 26);
@@ -366,6 +367,14 @@ namespace RSBot.Views
             menuPlayerFollow.Size = new System.Drawing.Size(204, 26);
             menuPlayerFollow.Text = "Player Follow";
             menuPlayerFollow.Click += menuPlayerFollow_Click;
+            //
+            // menuAutoSelect
+            //
+            menuAutoSelect.ForeColor = System.Drawing.Color.FromArgb(0, 0, 0);
+            menuAutoSelect.Name = "menuAutoSelect";
+            menuAutoSelect.Size = new System.Drawing.Size(204, 26);
+            menuAutoSelect.Text = "Auto Select";
+            menuAutoSelect.Click += menuAutoSelect_Click;
             //
             // menuPluginManager
             //
@@ -549,6 +558,7 @@ namespace RSBot.Views
         private System.Windows.Forms.ToolStripMenuItem toolsToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem menuScriptRecorder;
         private System.Windows.Forms.ToolStripMenuItem menuPlayerFollow;
+        private System.Windows.Forms.ToolStripMenuItem menuAutoSelect;
         private System.Windows.Forms.ToolStripMenuItem menuPluginManager;
         private System.Windows.Forms.ToolStripMenuItem menuPacketLogger;
         private System.Windows.Forms.ToolStripMenuItem menuPlugins;

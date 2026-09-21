@@ -134,7 +134,7 @@ public partial class EnhanceSettingsView : DoubleBufferedControl
         comboLuckyPowder.Items.Clear();
 
         int powderIndex = 0;
-        int selectedPowderIndex = 0;
+        int selectedPowderIndex = -1;
         foreach (var items in luckyPowders.GroupBy(i => i.ItemId))
         {
             comboLuckyPowder.Items.Add(new LuckyPowderComboboxItem(items));
@@ -146,12 +146,21 @@ public partial class EnhanceSettingsView : DoubleBufferedControl
         }
 
         if (comboLuckyPowder.Items.Count > 0)
-            comboLuckyPowder.SelectedIndex = selectedPowderIndex;
+        {
+            if (selectedPowderIndex >= 0)
+                comboLuckyPowder.SelectedIndex = selectedPowderIndex;
+            else if (Bootstrap.IsActive)
+                Bootstrap.StopWithReason("[Alchemy] Configured lucky powder ran out, stopping!");
+            else
+                comboLuckyPowder.SelectedIndex = 0; // bot not running: show first available so combo is never blank
+        }
 
         // Stones
         var luckyStones = AlchemyItemHelper.GetLuckyStone(_selectedItem);
         checkUseLuckyStones.Enabled = luckyStones != null && luckyStones.Amount > 0;
-        if (luckyStones == null)
+        // Do not uncheck when stones run out: Run() already stops the bot when UseLuckyStones=true but no stones are available.
+        // Unchecking here would set UseLuckyStones=false and bypass that stop logic entirely.
+        if (!checkUseLuckyStones.Enabled && !Bootstrap.IsActive)
             checkUseLuckyStones.Checked = false;
         lblLuckyCount.Text = luckyStones == null ? "x0" : $"x{luckyStones.Amount}";
 

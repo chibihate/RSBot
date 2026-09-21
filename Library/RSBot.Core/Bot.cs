@@ -107,7 +107,7 @@ public class Bot
         if (!Running)
             return;
 
-        if (!TokenSource.IsCancellationRequested)
+        if (TokenSource != null && !TokenSource.IsCancellationRequested)
             TokenSource.Cancel();
 
         EventManager.FireEvent("OnStopBot");

@@ -153,6 +153,7 @@
             menuItemRefreshBuffs = new System.Windows.Forms.ToolStripMenuItem();
             panel5 = new SDUI.Controls.Panel();
             checkHideLowerLevelSkills = new SDUI.Controls.CheckBox();
+            checkAutoPartyBuff = new SDUI.Controls.CheckBox();
             tabMain.SuspendLayout();
             tabCurrentParty.SuspendLayout();
             contextParty.SuspendLayout();
@@ -1836,6 +1837,7 @@
             panel5.Border = new System.Windows.Forms.Padding(0, 1, 0, 0);
             panel5.BorderColor = System.Drawing.Color.Transparent;
             panel5.Controls.Add(checkHideLowerLevelSkills);
+            panel5.Controls.Add(checkAutoPartyBuff);
             panel5.Dock = System.Windows.Forms.DockStyle.Bottom;
             panel5.Location = new System.Drawing.Point(2, 502);
             panel5.Margin = new System.Windows.Forms.Padding(4);
@@ -1851,18 +1853,30 @@
             checkHideLowerLevelSkills.AutoSize = true;
             checkHideLowerLevelSkills.BackColor = System.Drawing.Color.Transparent;
             checkHideLowerLevelSkills.Depth = 0;
-            checkHideLowerLevelSkills.Dock = System.Windows.Forms.DockStyle.Fill;
-            checkHideLowerLevelSkills.Location = new System.Drawing.Point(12, 0);
+            checkHideLowerLevelSkills.Location = new System.Drawing.Point(12, 6);
             checkHideLowerLevelSkills.Margin = new System.Windows.Forms.Padding(0);
             checkHideLowerLevelSkills.MouseLocation = new System.Drawing.Point(-1, -1);
             checkHideLowerLevelSkills.Name = "checkHideLowerLevelSkills";
             checkHideLowerLevelSkills.Ripple = true;
-            checkHideLowerLevelSkills.Size = new System.Drawing.Size(318, 32);
             checkHideLowerLevelSkills.TabIndex = 10;
             checkHideLowerLevelSkills.Text = "Hide lower level skills";
             checkHideLowerLevelSkills.UseVisualStyleBackColor = false;
-            //checkHideLowerLevelSkills.Visible = false;
             checkHideLowerLevelSkills.CheckedChanged += checkHideLowerLevelSkills_CheckedChanged;
+            //
+            // checkAutoPartyBuff
+            //
+            checkAutoPartyBuff.AutoSize = true;
+            checkAutoPartyBuff.BackColor = System.Drawing.Color.Transparent;
+            checkAutoPartyBuff.Depth = 0;
+            checkAutoPartyBuff.Location = new System.Drawing.Point(185, 6);
+            checkAutoPartyBuff.Margin = new System.Windows.Forms.Padding(0);
+            checkAutoPartyBuff.MouseLocation = new System.Drawing.Point(-1, -1);
+            checkAutoPartyBuff.Name = "checkAutoPartyBuff";
+            checkAutoPartyBuff.Ripple = true;
+            checkAutoPartyBuff.TabIndex = 11;
+            checkAutoPartyBuff.Text = "Auto buff party";
+            checkAutoPartyBuff.UseVisualStyleBackColor = false;
+            checkAutoPartyBuff.CheckedChanged += checkAutoPartyBuff_CheckedChanged;
             // 
             // Main
             // 
@@ -1901,6 +1915,7 @@
             contextPartyBuffs.ResumeLayout(false);
             panel5.ResumeLayout(false);
             panel5.PerformLayout();
+            checkAutoPartyBuff.PerformLayout();
             ResumeLayout(false);
         }
 
@@ -2030,5 +2045,6 @@
         private SDUI.Controls.CheckBox checkBoxJoinByName;
         private SDUI.Controls.CheckBox checkBoxFollowMaster;
         private SDUI.Controls.Button buttonAddCharToBuffing;
+        private SDUI.Controls.CheckBox checkAutoPartyBuff;
     }
 }

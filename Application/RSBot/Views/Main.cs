@@ -305,7 +305,6 @@ public partial class Main : UIWindow
     private void Main_Shown(object sender, EventArgs e)
     {
         _isWindowLoaded = true;
-        CheckAndShowDonationReminder();
     }
 
     /// <summary>
@@ -348,6 +347,14 @@ public partial class Main : UIWindow
     }
 
     #endregion Methods
+
+    protected override bool ProcessCmdKey(ref System.Windows.Forms.Message msg, Keys keyData)
+    {
+        if (keyData == Keys.Escape)
+            return true; // absorb Esc — prevents UIWindowBase from closing the main window
+
+        return base.ProcessCmdKey(ref msg, keyData);
+    }
 
     #region Form events
 
@@ -415,6 +422,19 @@ public partial class Main : UIWindow
         var window = new PlayerFollowWindow();
         window.FormClosed += (s, _) => ((Form)s).Dispose();
         window.Show();
+    }
+
+    private AutoSelectWindow _autoSelectWindow;
+
+    private void menuAutoSelect_Click(object sender, EventArgs e)
+    {
+        if (_autoSelectWindow == null || _autoSelectWindow.IsDisposed)
+        {
+            _autoSelectWindow = new AutoSelectWindow();
+            _autoSelectWindow.FormClosed += (s, _) => ((Form)s).Dispose();
+        }
+        _autoSelectWindow.Show();
+        _autoSelectWindow.BringToFront();
     }
 
     private void menuPacketLogger_Click(object sender, EventArgs e)

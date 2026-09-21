@@ -22,6 +22,8 @@ namespace RSBot.Party.Views;
 [ToolboxItem(false)]
 public partial class Main : DoubleBufferedControl
 {
+    private const string AllMembersName = "*";
+
     /// <summary>
     ///     <inheritdoc />
     /// </summary>
@@ -37,6 +39,8 @@ public partial class Main : DoubleBufferedControl
     /// </summary>
     private ListViewItem _selectedBuffingGroup;
 
+    private System.Windows.Forms.Timer _autoPartyBuffTimer;
+
     /// <summary>
     ///     Initializes a new instance of the <see cref="Main" /> class.
     /// </summary>
@@ -51,6 +55,9 @@ public partial class Main : DoubleBufferedControl
         _buffings = new List<BuffingPartyMember>();
         CheckForIllegalCrossThreadCalls = false;
         cbPartySearchPurpose.SelectedIndex = 0;
+
+        _autoPartyBuffTimer = new System.Windows.Forms.Timer { Interval = 5000 };
+        _autoPartyBuffTimer.Tick += AutoPartyBuffTimer_Tick;
 
         SubscribeEvents();
     }
@@ -203,17 +210,23 @@ public partial class Main : DoubleBufferedControl
 
         foreach (ListViewItem itemGroup in listViewGroups.Items)
         {
-            var members = _buffings.FindAll(p => p.Group == itemGroup.Text);
+            EnsureAllMembersEntry(itemGroup.Text);
+
+            var members = _buffings.FindAll(p => p.Group == itemGroup.Text && p.Name != AllMembersName);
 
             itemGroup.SubItems[1].Text = members.Count.ToString();
 
             if (itemGroup.Text == _selectedBuffingGroup.Text)
+            {
+                var allItem = listViewPartyMembers.Items.Add(AllMembersName, "★ All Members", 0);
+                allItem.ForeColor = System.Drawing.Color.DarkGreen;
+
                 foreach (var member in members)
-                {
-                    var item = listViewPartyMembers.Items.Add(member.Name, member.Name, 0);
-                    if (item.Index == 0)
-                        item.Selected = true;
-                }
+                    listViewPartyMembers.Items.Add(member.Name, member.Name, 0);
+
+                if (listViewPartyMembers.Items.Count > 0)
+                    listViewPartyMembers.Items[0].Selected = true;
+            }
         }
 
         LoadPartyBuffSkills();
@@ -303,6 +316,10 @@ public partial class Main : DoubleBufferedControl
         textBoxLeaveIfMasterNotName.Text = Bundle.Container.AutoParty.Config.LeaveIfMasterNotName;
         textBoxLeaveIfMasterNotName.Enabled = !checkBoxLeaveIfMasterNot.Checked;
         checkBoxFollowMaster.Checked = PlayerConfig.Get("RSBot.Party.AlwaysFollowPartyMaster", false);
+        checkAutoPartyBuff.Checked = PlayerConfig.Get("RSBot.Party.AutoBuff", false);
+
+        if (checkAutoPartyBuff.Checked)
+            _autoPartyBuffTimer.Start();
 
         checkAcceptIfBotStopped.Checked = Bundle.Container.AutoParty.Config.AcceptIfBotIsStopped;
         checkBoxListenMasterCommands.Checked = Bundle.Container.Commands.Config.ListenOnlyMaster;
@@ -886,7 +903,7 @@ public partial class Main : DoubleBufferedControl
 
         selectedMemberBuffs.Items.Clear();
 
-        var name = listViewPartyMembers.SelectedItems[0].Text;
+        var name = listViewPartyMembers.SelectedItems[0].Name;
         var member = _buffings.Find(p => p.Name == name);
         if (member == null)
             return;
@@ -913,7 +930,7 @@ public partial class Main : DoubleBufferedControl
         if (listPartyBuffSkills.SelectedItems.Count == 0)
             return;
 
-        var memberName = listViewPartyMembers.SelectedItems[0].Text;
+        var memberName = listViewPartyMembers.SelectedItems[0].Name;
 
         var buffingMember = _buffings.Find(p => p.Name == memberName);
         if (buffingMember == null)
@@ -964,7 +981,7 @@ public partial class Main : DoubleBufferedControl
         if (selectedMemberBuffs.SelectedItems.Count == 0)
             return;
 
-        var memberName = listViewPartyMembers.SelectedItems[0].Text;
+        var memberName = listViewPartyMembers.SelectedItems[0].Name;
 
         var buffingMember = _buffings.FirstOrDefault(p => p.Name == memberName);
         if (buffingMember == null)
@@ -1000,7 +1017,7 @@ public partial class Main : DoubleBufferedControl
         if (partyMember == null)
             return;
 
-        if (partyMember.Name == Game.Player.Name)
+        if (partyMember.Name == Game.Player.Name || partyMember.Name == AllMembersName)
             return;
 
         var dialogTitle = LanguageManager.GetLang("SelectGroup", partyMember.Name);
@@ -1097,13 +1114,16 @@ public partial class Main : DoubleBufferedControl
         if (listViewPartyMembers.SelectedItems.Count == 0)
             return;
 
+        var selectedItem = listViewPartyMembers.SelectedItems[0];
+        if (selectedItem.Name == AllMembersName)
+            return;
+
         if (
             MessageBox.Show(this, LanguageManager.GetLang("GroupCharDeleteWarn"), "Warning", MessageBoxButtons.YesNo)
             == DialogResult.Yes
         )
         {
-            var selectedItem = listViewPartyMembers.SelectedItems[0];
-            var name = selectedItem.Text;
+            var name = selectedItem.Name;
 
             var affected = _buffings.RemoveAll(p => p.Name == name);
             if (affected > 0)
@@ -1128,6 +1148,9 @@ public partial class Main : DoubleBufferedControl
             return;
 
         string name = diag.Value.ToString();
+
+        if (name == AllMembersName)
+            return;
 
         if (_buffings.Any(p => p.Group == _selectedBuffingGroup.Text && p.Name == name))
         {
@@ -1199,6 +1222,33 @@ public partial class Main : DoubleBufferedControl
         PlayerConfig.Set("RSBot.Party.AlwaysFollowPartyMaster", checkBoxFollowMaster.Checked);
 
         Bundle.Container.Refresh();
+    }
+
+    private void checkAutoPartyBuff_CheckedChanged(object sender, EventArgs e)
+    {
+        if (!_applySettings)
+            return;
+
+        PlayerConfig.Set("RSBot.Party.AutoBuff", checkAutoPartyBuff.Checked);
+
+        if (checkAutoPartyBuff.Checked)
+            _autoPartyBuffTimer.Start();
+        else
+            _autoPartyBuffTimer.Stop();
+    }
+
+    private void AutoPartyBuffTimer_Tick(object sender, EventArgs e)
+    {
+        if (!Game.Ready || Game.Player == null)
+            return;
+
+        EventManager.FireEvent("OnAutoPartyBuffTick");
+    }
+
+    private void EnsureAllMembersEntry(string group)
+    {
+        if (!_buffings.Any(p => p.Name == AllMembersName && p.Group == group))
+            _buffings.Add(new BuffingPartyMember { Name = AllMembersName, Group = group });
     }
 
     /// <summary>

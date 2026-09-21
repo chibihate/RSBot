@@ -1,4 +1,5 @@
 ﻿using RSBot.Core.Event;
+using RSBot.Core.Objects;
 
 namespace RSBot.Core.Network.Handler.Agent.Action;
 
@@ -12,32 +13,23 @@ internal class ActionCommandStateResponse : IPacketHandler
     {
         var state = packet.ReadByte();
         var recurring = packet.ReadByte();
-        if (recurring == 0)
-        {
-            Game.Player.InAction = false;
-            Log.Debug("Player has exited in action!");
-            EventManager.FireEvent("OnPlayerExitAction");
-        }
-        else
-        {
-            Game.Player.InAction = true;
-            Log.Debug("Player has entered in action!");
-            EventManager.FireEvent("OnPlayerInAction");
-        }
-        /*
+        Position playerPosition = Game.Player.Position;
+        Log.Debug($"[Script] Player position: {playerPosition.Region}({playerPosition.Region.X},{playerPosition.Region.Y}) X={playerPosition.X}, Y={playerPosition.Y} [XOff={playerPosition.XOffset:F1}, YOff={playerPosition.YOffset:F1}]");
+
         switch (state)
         {
             case 0x01:
                 Game.Player.InAction = true;
+                Log.Debug("Player has entered in action!");
                 EventManager.FireEvent("OnPlayerInAction");
                 break;
 
             case 0x02:
                 Game.Player.InAction = recurring != 0;
-
+                Log.Debug("Player has exited in action!");
                 EventManager.FireEvent("OnPlayerExitAction");
                 break;
-        }*/
+        }
     }
 
     #region Properites

@@ -12,6 +12,8 @@ namespace RSBot.Training.Bundle.PartyBuffing;
 
 internal class PartyBuffingBundle : IBundle
 {
+    private const string AllMembersName = "*";
+
     /// <summary>
     ///     <c>true</c> if refreshing this bundle; otherwise <c>false</c>
     /// </summary>
@@ -28,6 +30,7 @@ internal class PartyBuffingBundle : IBundle
     public PartyBuffingBundle()
     {
         EventManager.SubscribeEvent("OnPartyBuffSettingsChanged", OnPartyBuffSettingsChanged);
+        EventManager.SubscribeEvent("OnAutoPartyBuffTick", Invoke);
     }
 
     /// <summary>
@@ -97,6 +100,47 @@ internal class PartyBuffingBundle : IBundle
 
                 Log.Status($"Buffing {skill.Record?.GetRealName()} party member {member.Name}");
                 skill.Cast(member.UniqueId, true);
+            }
+        }
+
+        // Apply "All Members" wildcard buffs to every current party member
+        var allMembersConfig = BuffingPartyMembers.Find(p => p.Name == AllMembersName && p.Group == selectedGroup);
+        if (allMembersConfig != null && allMembersConfig.Buffs.Count > 0)
+        {
+            SpawnManager.TryGetEntities<SpawnedPlayer>(
+                p => Game.Party?.Members?.Any(m => m.Name == p.Name) ?? false,
+                out var partyMembers);
+
+            foreach (var partyMember in partyMembers)
+            {
+                if (partyMember.State.LifeState == LifeState.Dead)
+                    continue;
+
+                foreach (var buff in allMembersConfig.Buffs)
+                {
+                    var skill = Game.Player.Skills.GetSkillInfoById(buff);
+                    if (skill == null || skill.HasCooldown)
+                        continue;
+
+                    if (skill.Record.TargetGroup_Party && !skill.Record.TargetGroup_Ally)
+                    {
+                        if (!(Game.Party?.Members?.Any(p => p.Name == partyMember.Name) ?? false))
+                            continue;
+                    }
+
+                    var isActive = partyMember.State.HasActiveBuff(skill, out var info);
+                    if (isActive && skill.Isbugged && info.Isbugged)
+                    {
+                        skill?.Reset();
+                        continue;
+                    }
+
+                    if (isActive)
+                        continue;
+
+                    Log.Status($"Buffing {skill.Record?.GetRealName()} -> {partyMember.Name} (All Members)");
+                    skill.Cast(partyMember.UniqueId, true);
+                }
             }
         }
     }

@@ -151,6 +151,12 @@ public partial class Main : DoubleBufferedControl
         if (IsDisposed || Disposing)
             return;
 
+        lock (RSBot.Training.Container.Lock)
+        {
+            RSBot.Training.Container.Bot.Reload();
+            Bundle.Bundles.Reload();
+        }
+
         var area = Kernel.Bot.Botbase.Area;
 
         txtXCoord.Text = area.Position.X.ToString("0.0");

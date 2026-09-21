@@ -415,24 +415,27 @@ public partial class Main : DoubleBufferedControl
     /// </summary>
     private void RedrawMap()
     {
-        var size = mapCanvas.ClientSize;
-
-        if (
-            bufferedGraphicsContext.MaximumBuffer.Width < size.Width
-            || bufferedGraphicsContext.MaximumBuffer.Height < size.Height
-        )
+        if (Visible)
         {
-            bufferedGraphicsContext.MaximumBuffer = new Size(size.Width + 1, size.Height + 1);
-        }
+            var size = mapCanvas.ClientSize;
 
-        if (
-            bufferedGraphics == null
-            || bufferedGraphics.Graphics.VisibleClipBounds.Width != size.Width
-            || bufferedGraphics.Graphics.VisibleClipBounds.Height != size.Height
-        )
-        {
-            bufferedGraphics?.Dispose();
-            bufferedGraphics = bufferedGraphicsContext.Allocate(mapCanvas.CreateGraphics(), mapCanvas.ClientRectangle);
+            if (
+                bufferedGraphicsContext.MaximumBuffer.Width < size.Width
+                || bufferedGraphicsContext.MaximumBuffer.Height < size.Height
+            )
+            {
+                bufferedGraphicsContext.MaximumBuffer = new Size(size.Width + 1, size.Height + 1);
+            }
+
+            if (
+                bufferedGraphics == null
+                || bufferedGraphics.Graphics.VisibleClipBounds.Width != size.Width
+                || bufferedGraphics.Graphics.VisibleClipBounds.Height != size.Height
+            )
+            {
+                bufferedGraphics?.Dispose();
+                bufferedGraphics = bufferedGraphicsContext.Allocate(mapCanvas.CreateGraphics(), mapCanvas.ClientRectangle);
+            }
         }
 
         // Set layer path & sectors
@@ -569,10 +572,46 @@ public partial class Main : DoubleBufferedControl
         }
     }
 
+    private void FireMinimapThumbnail()
+    {
+        if (_currentSectorGraphic == null)
+            return;
+
+        const int ThumbSize = 150;
+        // crop 1/4 of the full image (half each dimension = quarter area)
+        const int CropSize = SectorSize * 3 / 2; // 384px out of 768px
+
+        float playerX = SectorSize + Game.Player.Movement.Source.XSectorOffset / 10f * _scale;
+        float playerY = SectorSize * 2 - Game.Player.Movement.Source.YSectorOffset / 10f * _scale;
+
+        float cropX = Math.Max(0, Math.Min(playerX - CropSize / 2f, SectorSize * 3 - CropSize));
+        float cropY = Math.Max(0, Math.Min(playerY - CropSize / 2f, SectorSize * 3 - CropSize));
+        var srcRect = new System.Drawing.RectangleF(cropX, cropY, CropSize, CropSize);
+
+        var thumb = new Bitmap(ThumbSize, ThumbSize);
+        using var tg = Graphics.FromImage(thumb);
+        tg.Clear(Color.Black);
+        tg.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.Bicubic;
+        tg.DrawImage(_currentSectorGraphic,
+            new System.Drawing.RectangleF(0, 0, ThumbSize, ThumbSize),
+            srcRect,
+            GraphicsUnit.Pixel);
+
+        // player dot at center (may shift slightly near map edges due to clamping)
+        float dotX = (playerX - cropX) / CropSize * ThumbSize;
+        float dotY = (playerY - cropY) / CropSize * ThumbSize;
+        tg.FillEllipse(Brushes.Red, dotX - 4, dotY - 4, 8, 8);
+
+        EventManager.FireEvent("OnMinimapUpdated", thumb);
+    }
+
     private void trmInterval_Tick(object sender, EventArgs e)
     {
         if (Game.Player == null)
             return;
+
+        RedrawMap();
+        FireMinimapThumbnail();
 
         if (!Visible)
             return;
@@ -587,7 +626,6 @@ public partial class Main : DoubleBufferedControl
         }
 
         bufferedGraphics.Graphics.Clear(Color.Black);
-        RedrawMap();
         DrawObjects(bufferedGraphics.Graphics);
 
         using var font = new Font(Font, FontStyle.Bold);

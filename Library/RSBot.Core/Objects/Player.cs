@@ -628,6 +628,15 @@ public class Player : SpawnedBionic
         return true;
     }
 
+    // Cap client-side angle movement simulation at 500ms. The server resets this on
+    // every movement packet (~100-200ms), so legitimate movement is unaffected.
+    // Prevents CheckMovement from drifting position indefinitely when no stop packet arrives.
+    public override void Move(float angle)
+    {
+        Movement.RemainingTime = TimeSpan.FromMilliseconds(500);
+        base.Move(angle);
+    }
+
     /// <summary>
     ///     Gets the ammunition amount.
     /// </summary>
@@ -781,10 +790,10 @@ public class Player : SpawnedBionic
 
             var result = potionItem.Use();
 
+            tick = Kernel.TickCount;
+
             if (result)
             {
-                tick = Kernel.TickCount;
-
                 Log.Debug($"Potion [{potionItem.Record.GetRealName()}] used");
             }
             else

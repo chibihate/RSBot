@@ -103,6 +103,10 @@ internal class EnhanceBundle : IAlchemyBundle
             return;
         }
 
+        //Config incomplete?
+        if (!_shouldRun || Globals.Botbase.AlchemyEngine != AlchemyEngine.Enhance)
+            return;
+
         //Item still there and available?
         var item = Game.Player.Inventory.GetItemAt(config.Item.Slot);
         if (item == null || item.Amount == 0)
@@ -110,10 +114,6 @@ internal class EnhanceBundle : IAlchemyBundle
             Bootstrap.StopWithReason("[Alchemy] Item to enhance is unavailable");
             return;
         }
-
-        //Config incomplete?
-        if (!_shouldRun || Globals.Botbase.AlchemyEngine != AlchemyEngine.Enhance)
-            return;
 
         // 500ms buffer between consecutive sends
         if (DateTime.UtcNow < _nextRunAfter)

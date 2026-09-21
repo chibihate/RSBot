@@ -62,6 +62,7 @@
             label3 = new SDUI.Controls.Label();
             checkResurrectParty = new SDUI.Controls.CheckBox();
             groupBoxAdvancedBuff = new SDUI.Controls.GroupBox();
+            checkAutoBuff = new SDUI.Controls.CheckBox();
             checkCastBuffsBetweenAttacks = new SDUI.Controls.CheckBox();
             checkCastBuffsDuringWalkBack = new SDUI.Controls.CheckBox();
             checkCastBuffsInTowns = new SDUI.Controls.CheckBox();
@@ -615,6 +616,7 @@
             // groupBoxAdvancedBuff
             // 
             groupBoxAdvancedBuff.BackColor = System.Drawing.Color.Transparent;
+            groupBoxAdvancedBuff.Controls.Add(checkAutoBuff);
             groupBoxAdvancedBuff.Controls.Add(checkCastBuffsBetweenAttacks);
             groupBoxAdvancedBuff.Controls.Add(checkCastBuffsDuringWalkBack);
             groupBoxAdvancedBuff.Controls.Add(checkCastBuffsInTowns);
@@ -624,7 +626,7 @@
             groupBoxAdvancedBuff.Padding = new System.Windows.Forms.Padding(4, 12, 4, 4);
             groupBoxAdvancedBuff.Radius = 10;
             groupBoxAdvancedBuff.ShadowDepth = 4;
-            groupBoxAdvancedBuff.Size = new System.Drawing.Size(465, 114);
+            groupBoxAdvancedBuff.Size = new System.Drawing.Size(465, 140);
             groupBoxAdvancedBuff.TabIndex = 12;
             groupBoxAdvancedBuff.TabStop = false;
             groupBoxAdvancedBuff.Text = "Advanced buff configuration";
@@ -678,7 +680,23 @@
             checkCastBuffsInTowns.Text = "Cast buffs in towns";
             checkCastBuffsInTowns.UseVisualStyleBackColor = false;
             checkCastBuffsInTowns.CheckedChanged += settings_CheckedChanged;
-            // 
+            //
+            // checkAutoBuff
+            //
+            checkAutoBuff.AutoSize = true;
+            checkAutoBuff.BackColor = System.Drawing.Color.Transparent;
+            checkAutoBuff.Depth = 0;
+            checkAutoBuff.Location = new System.Drawing.Point(19, 107);
+            checkAutoBuff.Margin = new System.Windows.Forms.Padding(0);
+            checkAutoBuff.MouseLocation = new System.Drawing.Point(-1, -1);
+            checkAutoBuff.Name = "checkAutoBuff";
+            checkAutoBuff.Ripple = true;
+            checkAutoBuff.Size = new System.Drawing.Size(200, 30);
+            checkAutoBuff.TabIndex = 13;
+            checkAutoBuff.Text = "Auto buff (always on)";
+            checkAutoBuff.UseVisualStyleBackColor = false;
+            checkAutoBuff.CheckedChanged += checkAutoBuff_CheckedChanged;
+            //
             // grpMasteryUpdate
             // 
             grpMasteryUpdate.BackColor = System.Drawing.Color.Transparent;
@@ -1147,6 +1165,7 @@
         private SDUI.Controls.Label label3;
         private SDUI.Controls.CheckBox checkResurrectParty;
         private SDUI.Controls.CheckBox checkAcceptResurrection;
+        private SDUI.Controls.CheckBox checkAutoBuff;
         private SDUI.Controls.CheckBox checkCastBuffsInTowns;
         private SDUI.Controls.GroupBox groupBoxAutomatedResurrection;
         private SDUI.Controls.GroupBox groupBoxAdvancedBuff;

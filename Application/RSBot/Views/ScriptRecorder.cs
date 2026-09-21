@@ -220,15 +220,10 @@ public partial class ScriptRecorder : UIWindow
 
         var destination = entity.Movement.Destination;
 
-        StringBuilder stepString = new(); //you prefer it like this? so its not problem var stepString = new StringBuilder() same for me so np :D kk
-        stepString.Append($"move {destination.XOffset:0}");
-        stepString.Append($" {destination.YOffset:0}");
-        stepString.Append($" {destination.ZOffset:0}");
-        stepString.Append($" {destination.Region.X}");
-        stepString.Append($" {destination.Region.Y}");
-        stepString.AppendLine();
+        var stepString = $"move {destination.X:0.##} {destination.Y:0.##}";
+        stepString += Environment.NewLine;
 
-        txtScript.AppendText(stepString.ToString());
+        txtScript.AppendText(stepString);
     }
 
     /// <summary>

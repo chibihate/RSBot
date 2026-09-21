@@ -29,6 +29,8 @@ public class Bootstrap : IPlugin
 
         EventManager.SubscribeEvent("OnAutoScriptsStart", OnAutoScriptsStart);
         EventManager.SubscribeEvent("OnAutoScriptsStop", () => AppService.Bot.Stop());
+        EventManager.SubscribeEvent("OnAgentServerDisconnected", OnDisconnect);
+        EventManager.SubscribeEvent("OnExitClient", OnDisconnect);
         Log.Debug("[Scripts] Plugin initialized.");
     }
 
@@ -37,9 +39,17 @@ public class Bootstrap : IPlugin
         AppService.View?.LoadSettings();
     }
 
+    private void OnDisconnect()
+    {
+        AppService.Bot.Stop();
+        AppService.Script1.Stop();
+        AppService.Script2.Stop();
+        AppService.Script3.Stop();
+    }
+
     private void OnAutoScriptsStart()
     {
-        var raw = PlayerConfig.Get("RSBot.AutoScript.Scripts", string.Empty);
+        var raw = PlayerConfig.Get("RSBot.Scripts.Scripts", string.Empty);
         AppService.Bot.ScriptPaths.Clear();
         foreach (var path in raw.Split(';'))
         {
@@ -47,8 +57,8 @@ public class Bootstrap : IPlugin
                 AppService.Bot.ScriptPaths.Add(path);
         }
 
-        AppService.Bot.LoopCount = PlayerConfig.Get("RSBot.AutoScript.Loops", 1);
-        AppService.Bot.LoopDelay = PlayerConfig.Get("RSBot.AutoScript.LoopDelay", 0) * 1000;
+        AppService.Bot.LoopCount = PlayerConfig.Get("RSBot.Scripts.Loops", 1);
+        AppService.Bot.LoopDelay = PlayerConfig.Get("RSBot.Scripts.LoopDelay", 0) * 1000;
         AppService.Bot.Start();
     }
 

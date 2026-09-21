@@ -24,6 +24,7 @@ namespace RSBot.Skills.Views;
 public partial class Main : DoubleBufferedControl
 {
     private System.Windows.Forms.Timer _buffTimer;
+    private System.Windows.Forms.Timer _autoBuffTimer;
     private bool _didFirstDraw;
 
     /// <summary>
@@ -61,8 +62,15 @@ public partial class Main : DoubleBufferedControl
         listSkills.OwnerDraw = true;
         listSkills.DrawItem += ListSkill_DrawItem;
 
-        // Ensure timer is disposed when control is disposed
-        this.Disposed += (s, e) => { _buffTimer?.Stop(); _buffTimer?.Dispose(); };
+        _autoBuffTimer = new() { Interval = 3000 };
+        _autoBuffTimer.Tick += AutoBuffTimer_Tick;
+
+        // Ensure timers are disposed when control is disposed
+        this.Disposed += (s, e) =>
+        {
+            _buffTimer?.Stop(); _buffTimer?.Dispose();
+            _autoBuffTimer?.Stop(); _autoBuffTimer?.Dispose();
+        };
     }
 
     /// <summary>
@@ -951,6 +959,9 @@ public partial class Main : DoubleBufferedControl
     {
         comboMonsterType.SelectedIndex = 0;
 
+        if (checkAutoBuff.Checked)
+            _autoBuffTimer.Start();
+
         LoadSkills();
 
         ApplyAttackSkills();
@@ -964,9 +975,40 @@ public partial class Main : DoubleBufferedControl
     /// </summary>
     private void OnResurrectionRequest()
     {
-        const string key = "RSBot.Skills.";
-        if (Game.AcceptanceRequest != null && PlayerConfig.Get<bool>(key + checkAcceptResurrection.Name))
+        if (Game.AcceptanceRequest != null && checkAcceptResurrection.Checked)
             Game.AcceptanceRequest.Accept();
+    }
+
+    private void checkAutoBuff_CheckedChanged(object sender, EventArgs e)
+    {
+        if (_settingsLoaded)
+            ApplySettings();
+
+        if (checkAutoBuff.Checked)
+            _autoBuffTimer.Start();
+        else
+            _autoBuffTimer.Stop();
+    }
+
+    private void AutoBuffTimer_Tick(object sender, EventArgs e)
+    {
+        if (Game.Player == null
+            || Game.Player.State.LifeState != LifeState.Alive
+            || Game.Player.InAction
+            || Game.Player.HasActiveVehicle)
+            return;
+
+        var buffs = SkillManager.Buffs?.FindAll(p => !Game.Player.State.HasActiveBuff(p, out _) && p.CanBeCasted);
+        if (buffs == null || buffs.Count == 0)
+            return;
+
+        foreach (var buff in buffs)
+        {
+            if (Game.Player.State.LifeState != LifeState.Alive)
+                break;
+
+            buff.Cast(buff: true);
+        }
     }
 
     /// <summary>

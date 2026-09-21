@@ -15,9 +15,6 @@ if (-not (Test-Path ".\SDUI")) {
     git submodule update --init --recursive
 }
 
-taskkill /F /IM RSBot.exe
-taskkill /F /IM sro_client.exe
-
 if ($Clean) {
     Write-Output "Performing a clean build..."
     New-Item  -ItemType Directory ".\temp" -ErrorAction SilentlyContinue > $null

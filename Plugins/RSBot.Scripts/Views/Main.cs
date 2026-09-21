@@ -1,5 +1,6 @@
 using System;
 using System.ComponentModel;
+using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Windows.Forms;
@@ -13,14 +14,16 @@ namespace RSBot.Scripts.Views;
 [ToolboxItem(false)]
 public partial class Main : DoubleBufferedControl
 {
-    private const string ConfigKeyScripts  = "RSBot.AutoScript.Scripts";
-    private const string ConfigKeyLoops    = "RSBot.AutoScript.Loops";
-    private const string ConfigKeyDelay    = "RSBot.AutoScript.LoopDelay";
-    private const string ConfigKeySound    = "RSBot.AutoScript.SoundPath";
+    private const string ConfigKeyScripts  = "RSBot.Scripts.Scripts";
+    private const string ConfigKeyLoops    = "RSBot.Scripts.Loops";
+    private const string ConfigKeyDelay    = "RSBot.Scripts.LoopDelay";
+    private const string ConfigKeySound    = "RSBot.Scripts.SoundPath";
     private const string ConfigKeyScript1  = "RSBot.Scripts.Script1Path";
     private const string ConfigKeyScript2  = "RSBot.Scripts.Script2Path";
     private const string ConfigKeyScript3  = "RSBot.Scripts.Script3Path";
     private const string DefaultSoundPath  = @"C:\Windows\Media\Ring10.wav";
+
+    private bool _loadingSettings;
 
     public Main()
     {
@@ -34,6 +37,7 @@ public partial class Main : DoubleBufferedControl
         EventManager.SubscribeEvent("OnAutoScriptRunning", new Action<int>(OnAutoScriptRunning));
         EventManager.SubscribeEvent("OnAutoScriptsStopped", OnAutoScriptsStopped);
         EventManager.SubscribeEvent("OnStopBot", new Action(OnBotStopped));
+        EventManager.SubscribeEvent("OnMinimapUpdated", new Action<Bitmap>(OnMinimapUpdated));
 
         AppService.Script1.OnStopped = () => UpdateSlotButtons(1, false);
         AppService.Script2.OnStopped = () => UpdateSlotButtons(2, false);
@@ -81,6 +85,22 @@ public partial class Main : DoubleBufferedControl
         else Update();
     }
 
+    private void OnMinimapUpdated(Bitmap bitmap)
+    {
+        if (IsDisposed || Disposing) return;
+
+        void Update()
+        {
+            var old = picMinimap.Image;
+            picMinimap.Image = bitmap;
+            old?.Dispose();
+            lblMinimapPos.Text = Game.Player?.Position.ToString() ?? string.Empty;
+        }
+
+        if (InvokeRequired) BeginInvoke(Update);
+        else Update();
+    }
+
     private void SetRunningState(bool running)
     {
         btnStart.Enabled = !running;
@@ -117,6 +137,7 @@ public partial class Main : DoubleBufferedControl
 
     public void LoadSettings()
     {
+        _loadingSettings = true;
         nudLoops.Value = Math.Max(0, PlayerConfig.Get(ConfigKeyLoops, 1));
         nudDelay.Value = Math.Max(0, PlayerConfig.Get(ConfigKeyDelay, 0));
         txtSoundPath.Text = PlayerConfig.Get(ConfigKeySound, DefaultSoundPath);
@@ -138,6 +159,7 @@ public partial class Main : DoubleBufferedControl
         txtScript2Path.Text = PlayerConfig.Get(ConfigKeyScript2, string.Empty);
         txtScript3Path.Text = PlayerConfig.Get(ConfigKeyScript3, string.Empty);
 
+        _loadingSettings = false;
         ApplyOptions();
         SetRunningState(AppService.Bot.IsRunning);
         UpdateSlotButtons(1, AppService.Script1.IsRunning);
@@ -161,6 +183,7 @@ public partial class Main : DoubleBufferedControl
 
     private void SaveSettings()
     {
+        if (_loadingSettings) return;
         PlayerConfig.Set(ConfigKeyScripts, string.Join(";", AppService.Bot.ScriptPaths));
         PlayerConfig.Set(ConfigKeyLoops, (int)nudLoops.Value);
         PlayerConfig.Set(ConfigKeyDelay, (int)nudDelay.Value);

@@ -84,7 +84,7 @@ internal class AttackScriptCommand : IScriptCommand
                     if (Game.Ready && Kernel.Bot.Running)
                         Kernel.Bot.Botbase.Tick();
 
-                    await Task.Delay(100);
+                    await Task.Delay(150);
                 }
             });
 
@@ -97,18 +97,12 @@ internal class AttackScriptCommand : IScriptCommand
                 if (!IsBusy)
                     break;
 
-                if (SpawnManager.Any<SpawnedMonster>(m => m.HasHealth))
-                {
-                    if (failedChecks > 0)
-                    {
-                        Log.Debug("[Script] attack: Monsters detected, counter reset.");
-                        failedChecks = 0;
-                    }
-                }
-                else
+                if (!SpawnManager.Any<SpawnedMonster>(m => m.HasHealth))
                 {
                     failedChecks++;
                     Log.Debug($"[Script] attack: No monsters ({failedChecks}/{retries}).");
+                    Position playerPosition = Game.Player.Position;
+                    Log.Debug($"[Script] Player position: {playerPosition.Region}({playerPosition.Region.X},{playerPosition.Region.Y}) X={playerPosition.X}, Y={playerPosition.Y} [XOff={playerPosition.XOffset:F1}, YOff={playerPosition.YOffset:F1}]");
 
                     if (failedChecks >= retries)
                     {
@@ -129,6 +123,12 @@ internal class AttackScriptCommand : IScriptCommand
 
             // Clean up botbase state (cancel ongoing action, stop bundles)
             Kernel.Bot.Botbase?.Stop();
+
+            // Stop client-side movement simulation. Without this, CheckMovement() keeps
+            // accumulating XOffset after the botbase's last tick, making Position.X diverge
+            // from the server position and causing "Target position too far away" on the
+            // next move command.
+            Game.Player?.StopMoving();
 
             _cts = null;
             IsBusy = false;

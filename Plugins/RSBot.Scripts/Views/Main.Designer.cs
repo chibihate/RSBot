@@ -6,6 +6,12 @@ partial class Main
 {
     private System.ComponentModel.IContainer components = null;
 
+    // Minimap
+    private System.Windows.Forms.Panel pnlContent;
+    private System.Windows.Forms.Panel pnlMinimap;
+    private System.Windows.Forms.PictureBox picMinimap;
+    private System.Windows.Forms.Label lblMinimapPos;
+
     // Script list controls
     private System.Windows.Forms.GroupBox grpScripts;
     private System.Windows.Forms.ListBox lstScripts;
@@ -53,6 +59,10 @@ partial class Main
 
     private void InitializeComponent()
     {
+        pnlContent       = new System.Windows.Forms.Panel();
+        pnlMinimap       = new System.Windows.Forms.Panel();
+        picMinimap       = new System.Windows.Forms.PictureBox();
+        lblMinimapPos    = new System.Windows.Forms.Label();
         grpScripts       = new System.Windows.Forms.GroupBox();
         lstScripts       = new System.Windows.Forms.ListBox();
         panelButtons     = new System.Windows.Forms.Panel();
@@ -89,6 +99,9 @@ partial class Main
         btnStop          = new System.Windows.Forms.Button();
         lblStatus        = new System.Windows.Forms.Label();
 
+        pnlContent.SuspendLayout();
+        pnlMinimap.SuspendLayout();
+        ((System.ComponentModel.ISupportInitialize)picMinimap).BeginInit();
         grpScripts.SuspendLayout();
         panelButtons.SuspendLayout();
         grpQuickScripts.SuspendLayout();
@@ -139,6 +152,27 @@ partial class Main
         grpScripts.Padding = new Padding(4, 4, 4, 4);
         grpScripts.Controls.Add(lstScripts);
         grpScripts.Controls.Add(panelButtons);
+
+        // ── pnlMinimap ───────────────────────────────────────────────────────
+        lblMinimapPos.Dock      = DockStyle.Bottom;
+        lblMinimapPos.Height    = 16;
+        lblMinimapPos.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+        lblMinimapPos.Font      = new System.Drawing.Font(Font.FontFamily, 7f);
+        lblMinimapPos.ForeColor = System.Drawing.SystemColors.GrayText;
+
+        picMinimap.Dock      = DockStyle.Fill;
+        picMinimap.SizeMode  = System.Windows.Forms.PictureBoxSizeMode.Zoom;
+        picMinimap.BackColor = System.Drawing.Color.Black;
+
+        pnlMinimap.Dock  = DockStyle.Right;
+        pnlMinimap.Width = 155;
+        pnlMinimap.Controls.Add(picMinimap);
+        pnlMinimap.Controls.Add(lblMinimapPos);
+
+        // ── pnlContent ───────────────────────────────────────────────────────
+        pnlContent.Dock = DockStyle.Fill;
+        pnlContent.Controls.Add(grpScripts);   // Fill — added first = laid out last
+        pnlContent.Controls.Add(pnlMinimap);   // Right — added after = laid out first
 
         // ── grpQuickScripts ──────────────────────────────────────────────────
         grpQuickScripts.Text    = "Quick Scripts";
@@ -260,7 +294,7 @@ partial class Main
         AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
         AutoScaleMode       = AutoScaleMode.Font;
         Name = "Main";
-        Controls.Add(grpScripts);       // Fill
+        Controls.Add(pnlContent);       // Fill (contains grpScripts + minimap)
         Controls.Add(grpQuickScripts);  // Bottom (above panelSound)
         Controls.Add(panelSound);       // Bottom
         Controls.Add(panelOptions);     // Bottom
@@ -268,12 +302,15 @@ partial class Main
 
         ((System.ComponentModel.ISupportInitialize)nudLoops).EndInit();
         ((System.ComponentModel.ISupportInitialize)nudDelay).EndInit();
+        ((System.ComponentModel.ISupportInitialize)picMinimap).EndInit();
         panelButtons.ResumeLayout(false);
         grpQuickScripts.ResumeLayout(false);
         panelOptions.ResumeLayout(false);
         panelSound.ResumeLayout(false);
         panelBottom.ResumeLayout(false);
         grpScripts.ResumeLayout(false);
+        pnlMinimap.ResumeLayout(false);
+        pnlContent.ResumeLayout(false);
         ResumeLayout(false);
     }
 
