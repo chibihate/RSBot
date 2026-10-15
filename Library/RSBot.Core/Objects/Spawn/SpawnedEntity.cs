@@ -137,7 +137,7 @@ public class SpawnedEntity
             Move(movement.Destination);
     }
 
-    public virtual void Move(float angle)
+    public void Move(float angle)
     {
         lock (_lock)
         {
@@ -278,18 +278,23 @@ public class SpawnedEntity
             return;
         }
 
-        Movement.RemainingTime -= TimeSpan.FromMilliseconds(delta);
-        if (Movement.RemainingTime <= TimeSpan.Zero)
+        var remaning = -1f;
+
+        var finish = false;
+        var totalChange = ActualSpeed / 1000.0f * delta;
+        if (remaning != -1 && totalChange > remaning)
         {
-            StopMoving();
-            return;
+            totalChange = remaning;
+            finish = true;
         }
 
-        var totalChange = ActualSpeed / 1000.0f * delta;
         var dir = MathF.SinCos(Movement.Angle);
 
         Movement.Source.XOffset += dir.Cos * totalChange;
         Movement.Source.YOffset += dir.Sin * totalChange;
+
+        if (finish)
+            StopMoving(Movement.Destination);
     }
 
     /// <summary>

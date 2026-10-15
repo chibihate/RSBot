@@ -32,6 +32,7 @@ public partial class Main : UIWindow
     private string _playerName;
     private readonly Dictionary<string, UIWindow> _pluginWindows = new(8);
     private bool _isWindowLoaded;
+    private readonly GlobalKeyboardHook _globalHook;
 
     #endregion Members
 
@@ -46,6 +47,10 @@ public partial class Main : UIWindow
         CheckForIllegalCrossThreadCalls = false;
         SystemEvents.UserPreferenceChanged += SystemEvents_UserPreferenceChanged;
         RegisterEvents();
+
+        _globalHook = new GlobalKeyboardHook();
+        _globalHook.KeyDown += OnGlobalHotkeyDown;
+        _globalHook.Start();
 
         Text = "RSBot";
         Shown += Main_Shown;
@@ -117,6 +122,31 @@ public partial class Main : UIWindow
     /// <summary>
     ///     Registers the events.
     /// </summary>
+    private void OnGlobalHotkeyDown(Keys key)
+    {
+        if (!chkEnableHotkeys.Checked)
+            return;
+
+        switch (key)
+        {
+            case Keys.F5:
+                Log.Notify(Kernel.Bot?.Running == true ? "[F5] Stopping bot..." : "[F5] Starting bot...");
+                btnStartStop_Click(this, EventArgs.Empty);
+                break;
+
+            case Keys.F6:
+                if (Game.Player == null) return;
+                var pos = Game.Player.Position;
+                PlayerConfig.Set("RSBot.Area.Region", pos.Region);
+                PlayerConfig.Set("RSBot.Area.X", pos.XOffset);
+                PlayerConfig.Set("RSBot.Area.Y", pos.YOffset);
+                PlayerConfig.Set("RSBot.Area.Z", pos.ZOffset);
+                EventManager.FireEvent("OnSetTrainingArea");
+                Log.Notify($"[F6] Training area set to {pos.XOffset:0.##}, {pos.YOffset:0.##} (region {pos.Region})");
+                break;
+        }
+    }
+
     private void RegisterEvents()
     {
         EventManager.SubscribeEvent("OnChangeStatusText", new Action<string>(OnChangeStatusText));
@@ -614,6 +644,8 @@ public partial class Main : UIWindow
     /// <param name="e">The <see cref="FormClosingEventArgs" /> instance containing the event data.</param>
     private void Main_FormClosing(object sender, FormClosingEventArgs e)
     {
+        _globalHook.Dispose();
+
         if (Kernel.Proxy == null || !Kernel.Proxy.ClientConnected || !GlobalConfig.Get("RSBot.showExitDialog", true))
         {
             GlobalConfig.Save();

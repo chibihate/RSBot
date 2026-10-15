@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Linq;
 using RSBot.Core;
 using RSBot.Core.Client.ReferenceObjects;
@@ -14,6 +14,7 @@ internal class AttributeBundle : IAlchemyBundle
     #region Members
 
     private bool _shouldRun;
+    private DateTime _nextRunAfter = DateTime.MinValue;
 
     #endregion Members
 
@@ -39,7 +40,6 @@ internal class AttributeBundle : IAlchemyBundle
             new Action<InventoryItem, InventoryItem, AlchemyType>(OnStoneAlchemyFailed)
         );
         EventManager.SubscribeEvent("OnAlchemyError", new Action<ushort, AlchemyType>(OnStoneAlchemyError));
-        EventManager.SubscribeEvent("OnAlchemy", new Action<AlchemyType>(OnStoneAlchemy));
         EventManager.SubscribeEvent("OnFuseRequest", new Action<AlchemyAction, AlchemyType>(OnFuseRequest));
     }
 
@@ -52,8 +52,10 @@ internal class AttributeBundle : IAlchemyBundle
         if (engineConfig is not AttributeBundleConfig config)
             return;
 
-        //Wait for the next tick to operate
         if (!_shouldRun)
+            return;
+
+        if (DateTime.UtcNow < _nextRunAfter)
             return;
 
         if (!config.Attributes.Any())
@@ -73,7 +75,14 @@ internal class AttributeBundle : IAlchemyBundle
             if (currentValue >= attribute.MaxValue && attribute.MaxValue > 0)
                 continue;
 
-            if (!AlchemyManager.TryFuseAttributeStone(config.Item, attribute.Stone))
+            var currentStone = Game.Player.Inventory.GetItem(s => s.ItemId == attribute.Stone.ItemId && s.Amount > 0);
+            if (currentStone == null)
+            {
+                Bootstrap.StopWithReason($"[Alchemy] Attribute stone [{attribute.Stone.Record.GetRealName()}] is out of stock!");
+                return;
+            }
+
+            if (!AlchemyManager.TryFuseAttributeStone(config.Item, currentStone))
                 continue;
 
             _shouldRun = false;
@@ -89,6 +98,7 @@ internal class AttributeBundle : IAlchemyBundle
     public void Stop()
     {
         _shouldRun = false;
+        _nextRunAfter = DateTime.MinValue;
     }
 
     /// <summary>
@@ -99,6 +109,12 @@ internal class AttributeBundle : IAlchemyBundle
         _shouldRun = true;
     }
 
+    private void ReadyAfterBuffer()
+    {
+        _nextRunAfter = DateTime.UtcNow.AddMilliseconds(500);
+        _shouldRun = true;
+    }
+
     #endregion Methods
 
     #region Events
@@ -106,8 +122,6 @@ internal class AttributeBundle : IAlchemyBundle
     /// <summary>
     ///     Will be triggered if any fuse request was sent to the server
     /// </summary>
-    /// <param name="action"></param>
-    /// <param name="type"></param>
     private void OnFuseRequest(AlchemyAction action, AlchemyType type)
     {
         if (type != AlchemyType.AttributeStone || !Bootstrap.IsActive)
@@ -117,26 +131,17 @@ internal class AttributeBundle : IAlchemyBundle
     }
 
     /// <summary>
-    ///     Will be triggered if any stone alchemy action response was sent from the server
-    /// </summary>
-    private void OnStoneAlchemy(AlchemyType type)
-    {
-        if (type != AlchemyType.AttributeStone || !Bootstrap.IsActive)
-            return;
-
-        _shouldRun = true;
-    }
-
-    /// <summary>
     ///     Will be triggered if a stone alchemy operation was successful
     /// </summary>
-    /// <param name="oldItem"></param>
-    /// <param name="newItem">The new item after the successful action</param>
-    /// <param name="type"></param>
     private void OnStoneAlchemySuccess(InventoryItem oldItem, InventoryItem newItem, AlchemyType type)
     {
         if (type != AlchemyType.AttributeStone || !Bootstrap.IsActive)
             return;
+
+        if (Globals.Botbase.AttributeBundleConfig != null)
+            Globals.Botbase.AttributeBundleConfig.Item = newItem;
+
+        ReadyAfterBuffer();
 
         var changedAttributeSlots = oldItem.Attributes.CompareSlots(newItem.Attributes);
 
@@ -150,40 +155,36 @@ internal class AttributeBundle : IAlchemyBundle
                 $"The attribute [{attributeGroup.GetTranslation()}] changed to [+{attributeValue}%]"
             );
         }
-
-        _shouldRun = true;
     }
 
     /// <summary>
     ///     Will be triggered if a stone alchemy action failed
     /// </summary>
-    /// <param name="oldItem"></param>
-    /// <param name="newItem">The new item after the operation failed</param>
-    /// <param name="type"></param>
     private void OnStoneAlchemyFailed(InventoryItem oldItem, InventoryItem newItem, AlchemyType type)
     {
         if (type != AlchemyType.AttributeStone || !Bootstrap.IsActive)
             return;
 
+        if (Globals.Botbase.AttributeBundleConfig != null)
+            Globals.Botbase.AttributeBundleConfig.Item = newItem;
+
+        ReadyAfterBuffer();
+
         Globals.View.AddLog(
             newItem.Record.GetRealName(),
             Game.ReferenceManager.GetTranslation("UIIT_MSG_REINFORCERR_FAIL")
         );
-
-        _shouldRun = true;
     }
 
     /// <summary>
-    ///     Will be triggered if an stone alchemy error
+    ///     Will be triggered if a stone alchemy error occurs
     /// </summary>
-    /// <param name="errorCode">The error code</param>
-    /// <param name="type"></param>
     private void OnStoneAlchemyError(ushort errorCode, AlchemyType type)
     {
         if (type != AlchemyType.AttributeStone || !Bootstrap.IsActive)
             return;
 
-        _shouldRun = true;
+        ReadyAfterBuffer();
 
         Globals.View.AddLog(
             Globals.Botbase.AttributeBundleConfig?.Item?.Record?.GetRealName(),

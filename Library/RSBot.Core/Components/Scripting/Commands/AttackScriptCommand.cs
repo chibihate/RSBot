@@ -101,8 +101,6 @@ internal class AttackScriptCommand : IScriptCommand
                 {
                     failedChecks++;
                     Log.Debug($"[Script] attack: No monsters ({failedChecks}/{retries}).");
-                    Position playerPosition = Game.Player.Position;
-                    Log.Debug($"[Script] Player position: {playerPosition.Region}({playerPosition.Region.X},{playerPosition.Region.Y}) X={playerPosition.X}, Y={playerPosition.Y} [XOff={playerPosition.XOffset:F1}, YOff={playerPosition.YOffset:F1}]");
 
                     if (failedChecks >= retries)
                     {

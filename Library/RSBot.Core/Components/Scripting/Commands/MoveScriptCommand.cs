@@ -189,17 +189,7 @@ internal class MoveScriptCommand : IScriptCommand
         //If so dismount the vehicle
         //TODO: Find out how to get the ingame positions of ground teleporters like dw cave...
 
-        var distance = pos.DistanceTo(previousPosition);
         Log.Debug($"[Script] Move to position {pos.Region}({pos.Region.X},{pos.Region.Y}) X={pos.X}, Y={pos.Y}");
-        Log.Debug($"[Script] Player position: {previousPosition.Region}({previousPosition.Region.X},{previousPosition.Region.Y}) X={previousPosition.X}, Y={previousPosition.Y}");
-        Log.Debug($"[Script] Distance: {distance}");
-        if (distance > 100)
-        {
-            Log.Warn("[Script] Target position too far away, bot logic aborted!");
-
-            IsBusy = false;
-            return false;
-        }
 
         bool posResult = Game.Player.MoveTo(pos);
 
@@ -208,48 +198,10 @@ internal class MoveScriptCommand : IScriptCommand
             MustDismount = false;
             Game.Player.Vehicle.Dismount();
             bool previousPositionResult = Game.Player.MoveTo(previousPosition);
-            WaitUntilArrived(previousPosition);
-            Game.Player.StopMoving();
             return previousPositionResult;
         }
-
-        if (posResult)
-            WaitUntilArrived(pos);
-
-        Game.Player.StopMoving();
-        return posResult;
-    }
-
-    private void WaitUntilArrived(Position destination, double threshold = 5.0, int timeoutMs = 10000)
-    {
-        const int StuckCheckMs = 5000;
-        const double MinProgressDistance = 2.0;
-
-        var deadline = System.Diagnostics.Stopwatch.StartNew();
-        var progressTimer = System.Diagnostics.Stopwatch.StartNew();
-        var lastPosition = Game.Player.Position;
-
-        while (IsBusy && deadline.ElapsedMilliseconds < timeoutMs)
-        {
-            var current = Game.Player.Position;
-
-            if (current.DistanceTo(destination) <= threshold)
-                return;
-
-            if (progressTimer.ElapsedMilliseconds >= StuckCheckMs)
-            {
-                if (current.DistanceTo(lastPosition) < MinProgressDistance)
-                {
-                    Log.Debug("[Script] Player stuck, retrying move...");
-                    Game.Player.MoveTo(destination);
-                }
-
-                lastPosition = current;
-                progressTimer.Restart();
-            }
-
-            Thread.Sleep(300);
-        }
+        else
+            return posResult;
     }
 
     public void Stop()

@@ -466,12 +466,17 @@ public static class SkillManager
         PacketManager.SendPacket(packet, PacketDestination.Server, asyncCallback, callback);
 
         if (awaitBuffResponse)
+        {
             asyncCallback.AwaitResponse(
                 skill.Record.Action_CastingTime
                     + skill.Record.Action_ActionDuration
                     + skill.Record.Action_PreparingTime
                     + 1500
             );
+
+            if (!asyncCallback.IsCompleted)
+                skill.Update();
+        }
 
         if (skill.Record.Basic_Activity != 1 && awaitBuffResponse)
             callback.AwaitResponse();

@@ -727,27 +727,18 @@ public partial class Main : DoubleBufferedControl
         if (Game.Player == null)
             return;
 
-        if (!_autoSelectUnqiue)
-            return;
-
-        if (Kernel.Bot.Running)
-            return;
-
-        // Check if Unique is on map.
+        // Sound check runs regardless of _autoSelectUnqiue
         if (SpawnManager.TryGetEntities<SpawnedMonster>(out var monsters))
         {
             bool atleastOneUnqiueFound = false;
 
             foreach (var entry in monsters)
             {
-                if ((entry.Rarity == MonsterRarity.Unique || entry.Rarity == MonsterRarity.Unique2))
+                if (entry.Rarity == MonsterRarity.Unique || entry.Rarity == MonsterRarity.Unique2)
                 {
-                    // Check if unique was already discovered.
-                    // If yes => dont play sound again.
-                    if (false == _isUniqueSpotted)
+                    if (!_isUniqueSpotted)
                     {
                         _isUniqueSpotted = true;
-
                         Game.Player.NotificationSounds?.PlayUniqueInRange();
                     }
 
@@ -755,18 +746,19 @@ public partial class Main : DoubleBufferedControl
                 }
             }
 
-            // If no unique was discovered, reset
-            // _uniqueSpotted, so sound can play
-            // again if unique is in sight again.
             if (!atleastOneUnqiueFound)
-            {
                 _isUniqueSpotted = false;
-            }
         }
         else
         {
             _isUniqueSpotted = false;
         }
+
+        if (!_autoSelectUnqiue)
+            return;
+
+        if (Kernel.Bot.Running)
+            return;
 
         if (
             Game.SelectedEntity?.Record.Rarity == ObjectRarity.ClassD

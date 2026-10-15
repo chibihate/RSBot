@@ -11,6 +11,7 @@ using RSBot.Core.Objects.Inventory;
 using RSBot.Core.Objects.Job;
 using RSBot.Core.Objects.Quests;
 using RSBot.Core.Objects.Skill;
+using RSBot.Core.Components;
 using RSBot.Core.Objects.Spawn;
 
 namespace RSBot.Core.Objects;
@@ -628,15 +629,6 @@ public class Player : SpawnedBionic
         return true;
     }
 
-    // Cap client-side angle movement simulation at 500ms. The server resets this on
-    // every movement packet (~100-200ms), so legitimate movement is unaffected.
-    // Prevents CheckMovement from drifting position indefinitely when no stop packet arrives.
-    public override void Move(float angle)
-    {
-        Movement.RemainingTime = TimeSpan.FromMilliseconds(500);
-        base.Move(angle);
-    }
-
     /// <summary>
     ///     Gets the ammunition amount.
     /// </summary>
@@ -688,10 +680,9 @@ public class Player : SpawnedBionic
     public bool MoveTo(Position destination, bool sleep = true)
     {
         var distance = Game.Player.Movement.Source.DistanceTo(destination);
-        if (distance > 150)
+        if (distance > 150 && !ScriptManager.Running)
         {
             Log.Debug($"Player.Move: Target position too far away! Target distance: {Math.Round(distance, 2)}");
-
             return false;
         }
 

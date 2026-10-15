@@ -30,7 +30,6 @@ internal class PartyBuffingBundle : IBundle
     public PartyBuffingBundle()
     {
         EventManager.SubscribeEvent("OnPartyBuffSettingsChanged", OnPartyBuffSettingsChanged);
-        EventManager.SubscribeEvent("OnAutoPartyBuffTick", Invoke);
     }
 
     /// <summary>
@@ -40,6 +39,9 @@ internal class PartyBuffingBundle : IBundle
     {
         if (_refreshing)
             return;
+
+        if (BuffingPartyMembers == null)
+            Refresh();
 
         if (Game.Player.HasActiveVehicle)
             return;

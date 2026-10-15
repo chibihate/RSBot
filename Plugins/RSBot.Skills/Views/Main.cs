@@ -79,6 +79,7 @@ public partial class Main : DoubleBufferedControl
     private void SubscribeEvents()
     {
         EventManager.SubscribeEvent("OnLoadCharacter", OnLoadCharacter);
+        EventManager.SubscribeEvent("OnLogout", () => _autoBuffTimer.Stop());
 
         EventManager.SubscribeEvent("OnSkillLearned", new Action<SkillInfo>(OnSkillLearned));
         EventManager.SubscribeEvent("OnSkillUpgraded", new Action<SkillInfo, SkillInfo>(OnSkillUpgraded));
@@ -995,16 +996,24 @@ public partial class Main : DoubleBufferedControl
         if (Game.Player == null
             || Game.Player.State.LifeState != LifeState.Alive
             || Game.Player.InAction
-            || Game.Player.HasActiveVehicle)
+            || Game.Player.HasActiveVehicle
+            || Kernel.Bot.Running)
             return;
 
-        var buffs = SkillManager.Buffs?.FindAll(p => !Game.Player.State.HasActiveBuff(p, out _) && p.CanBeCasted);
-        if (buffs == null || buffs.Count == 0)
+        var buffs = SkillManager.Buffs?.FindAll(p => !Game.Player.State.HasActiveBuff(p, out _) && p.CanBeCasted)
+            ?? new System.Collections.Generic.List<SkillInfo>();
+
+        if (SkillManager.ImbueSkill != null
+            && !Game.Player.State.HasActiveBuff(SkillManager.ImbueSkill, out _)
+            && SkillManager.ImbueSkill.CanBeCasted)
+            buffs.Add(SkillManager.ImbueSkill);
+
+        if (buffs.Count == 0)
             return;
 
         foreach (var buff in buffs)
         {
-            if (Game.Player.State.LifeState != LifeState.Alive)
+            if (!checkAutoBuff.Checked || Game.Player.State.LifeState != LifeState.Alive)
                 break;
 
             buff.Cast(buff: true);

@@ -19,12 +19,31 @@ public partial class AutoSelectWindow : UIWindow
     private Keys _hotkey = Keys.Space;
     private bool _listeningForKey;
 
+    private static readonly (string Display, BadEffect Value)[] BadEffectOptions =
+    {
+        ("Bleed",       BadEffect.Bleed),
+        ("Poisoned",    BadEffect.Poisoned),
+        ("Frozen",      BadEffect.Frozen),
+        ("Stunned",     BadEffect.Stunned),
+        ("Burnt",       BadEffect.Burnt),
+        ("Shocked",     BadEffect.Shocked),
+        ("Sleep",       BadEffect.Sleep),
+        ("Bind",        BadEffect.Bind),
+        ("Fear",        BadEffect.Fear),
+        ("Darkness",    BadEffect.Darkness),
+        ("Petrify",     BadEffect.Petrify),
+    };
+
     public AutoSelectWindow()
     {
         InitializeComponent();
 
         _hook = new GlobalKeyboardHook();
         _hook.KeyDown += OnGlobalKeyDown;
+
+        foreach (var (display, _) in BadEffectOptions)
+            comboBadEffect.Items.Add(display);
+        comboBadEffect.SelectedIndex = 0; // Bleed
 
         SubscribeEvents();
     }
@@ -39,7 +58,15 @@ public partial class AutoSelectWindow : UIWindow
     private void OnSpawnPlayer(SpawnedPlayer player)
     {
         if (IsDisposed || Disposing) return;
-        void Add() { if (!comboFollowTarget.Items.Contains(player.Name)) comboFollowTarget.Items.Add(player.Name); }
+        void Add()
+        {
+            if (!comboFollowTarget.Items.Contains(player.Name))
+                comboFollowTarget.Items.Add(player.Name);
+
+            var guildName = player.Guild?.Name;
+            if (!string.IsNullOrEmpty(guildName) && lstGuilds.Items.IndexOf(guildName) < 0 && lstGuilds.Items.Count < 8)
+                lstGuilds.Items.Add(guildName, false);
+        }
         if (InvokeRequired) BeginInvoke(Add); else Add();
     }
 
@@ -70,6 +97,24 @@ public partial class AutoSelectWindow : UIWindow
         if (InvokeRequired) BeginInvoke(Populate); else Populate();
     }
 
+    private void RefreshGuildList()
+    {
+        if (IsDisposed || Disposing) return;
+        void Populate()
+        {
+            var checked_ = lstGuilds.CheckedItems.Cast<string>().ToHashSet();
+            lstGuilds.Items.Clear();
+            if (SpawnManager.TryGetEntities<SpawnedPlayer>(out var players))
+                foreach (var name in players
+                    .Select(p => p.Guild?.Name)
+                    .Where(n => !string.IsNullOrEmpty(n))
+                    .Distinct()
+                    .OrderBy(n => n))
+                    lstGuilds.Items.Add(name, checked_.Contains(name));
+        }
+        if (InvokeRequired) BeginInvoke(Populate); else Populate();
+    }
+
     private void OnGlobalKeyDown(Keys key)
     {
         if (key == _hotkey)
@@ -81,31 +126,64 @@ public partial class AutoSelectWindow : UIWindow
         if (Game.Player == null || Game.Player.State.LifeState != LifeState.Alive)
             return;
 
-        if (!string.IsNullOrWhiteSpace(comboFollowTarget.Text) && TrySelectFollowTarget())
-            return;
+        // If current target still has the selected bad effect, keep focus
+        if (chkKeepFocus.Checked && chkPriorityBadEffect.Checked && comboBadEffect.SelectedIndex >= 0)
+        {
+            var current = Game.SelectedEntity as SpawnedPlayer;
+            if (current != null
+                && current.State.LifeState == LifeState.Alive
+                && (current.BadEffect & BadEffectOptions[comboBadEffect.SelectedIndex].Value) != 0)
+                return;
+        }
 
-        var allowed = AllowedJobs();
-        if (allowed.Count == 0)
+        if (chkFollowTarget.Checked && !string.IsNullOrWhiteSpace(comboFollowTarget.Text) && TrySelectFollowTarget())
             return;
 
         var radius    = (double)nudRadius.Value;
         var currentId = Game.SelectedEntity?.UniqueId;
+        var candidates = new List<SpawnedPlayer>();
 
-        if (!SpawnManager.TryGetEntities<SpawnedPlayer>(
+        var allowed = AllowedJobs();
+        if (allowed.Count > 0 &&
+            SpawnManager.TryGetEntities<SpawnedPlayer>(
                 p => p.WearsJobSuite
                      && allowed.Contains(p.Job)
                      && p.State.LifeState == LifeState.Alive
                      && !p.IsBehindObstacle
                      && p.DistanceToPlayer <= radius
                      && p.UniqueId != currentId,
-                out var candidates))
+                out var jobTargets))
+            candidates.AddRange(jobTargets);
+
+        var targetGuilds = lstGuilds.CheckedItems.Cast<string>().ToHashSet();
+        if (targetGuilds.Count > 0 &&
+            SpawnManager.TryGetEntities<SpawnedPlayer>(
+                p => !string.IsNullOrEmpty(p.Guild?.Name)
+                     && targetGuilds.Contains(p.Guild.Name)
+                     && p.State.LifeState == LifeState.Alive
+                     && !p.IsBehindObstacle
+                     && p.DistanceToPlayer <= radius
+                     && p.UniqueId != currentId,
+                out var enemyTargets))
+            candidates.AddRange(enemyTargets);
+
+        if (candidates.Count == 0)
             return;
 
-        var list = candidates.ToList();
-        if (list.Count == 0)
-            return;
+        SpawnedPlayer pick;
+        if (chkPriorityBadEffect.Checked && comboBadEffect.SelectedIndex >= 0)
+        {
+            var effect   = BadEffectOptions[comboBadEffect.SelectedIndex].Value;
+            var priority = candidates.Where(p => (p.BadEffect & effect) != 0).ToList();
+            var pool     = priority.Count > 0 ? priority : candidates;
+            pick = pool[_rng.Next(pool.Count)];
+        }
+        else
+        {
+            pick = candidates[_rng.Next(candidates.Count)];
+        }
 
-        list[_rng.Next(list.Count)].TrySelect();
+        pick.TrySelect();
     }
 
     private bool TrySelectFollowTarget()
@@ -125,6 +203,9 @@ public partial class AutoSelectWindow : UIWindow
             return false;
 
         if (target.State.LifeState != LifeState.Alive || target.IsBehindObstacle)
+            return false;
+
+        if (target.DistanceToPlayer > (double)nudRadius.Value)
             return false;
 
         return target.TrySelect();
@@ -165,9 +246,25 @@ public partial class AutoSelectWindow : UIWindow
         UpdateStatus();
     }
 
+    private void chkFollowTarget_CheckedChanged(object sender, EventArgs e)
+    {
+        comboFollowTarget.Enabled  = chkFollowTarget.Checked;
+        btnRefreshFollow.Enabled   = chkFollowTarget.Checked;
+    }
+
+    private void chkPriorityBadEffect_CheckedChanged(object sender, EventArgs e)
+    {
+        comboBadEffect.Enabled = chkPriorityBadEffect.Checked;
+    }
+
     private void btnRefreshFollow_Click(object sender, EventArgs e)
     {
         RefreshFollowList();
+    }
+
+    private void btnRefreshGuilds_Click(object sender, EventArgs e)
+    {
+        RefreshGuildList();
     }
 
     private void btnHotkey_Click(object sender, EventArgs e)

@@ -210,7 +210,7 @@ internal class AlchemyItemHelper
         var actualGroupName = ItemAttributesInfo.GetActualAttributeGroupNameForItem(targetItem.Record, group);
         var attributeStones = Game
             .Player.Inventory.GetItems(typeIdFilter)
-            .Where(i => i.Record.Desc1 == actualGroupName);
+            .Where(i => i.Record.Desc1 == actualGroupName && i.Amount > 0);
 
         return attributeStones;
     }

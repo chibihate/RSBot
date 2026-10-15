@@ -25,6 +25,7 @@ public partial class AttributesSettingsView : DoubleBufferedControl
         CheckForIllegalCrossThreadCalls = false;
 
         EventManager.SubscribeEvent("OnEnterGame", SubscribeMainFormEvents);
+        EventManager.SubscribeEvent("OnInventoryUpdate", new System.Action(OnInventoryUpdated));
     }
 
     internal AttributeBundleConfig BundleConfig
@@ -75,6 +76,7 @@ public partial class AttributesSettingsView : DoubleBufferedControl
     {
         try
         {
+            var previousPanels = _attributePanels;
             _attributePanels = new List<AttributeInfoPanel>(6);
             var selectedItem = Globals.View.SelectedItem;
 
@@ -125,13 +127,14 @@ public partial class AttributesSettingsView : DoubleBufferedControl
                 panel.OnChange += PanelOnChange;
             }
 
-            BeginInvoke(() =>
-            {
-                Hide();
-                Controls.Clear();
-                Controls.AddRange(_attributePanels.ToArray());
-                Show();
-            });
+            SuspendLayout();
+            Controls.Clear();
+            Controls.AddRange(_attributePanels.ToArray());
+            ResumeLayout(true);
+
+            if (previousPanels != null)
+                foreach (var old in previousPanels)
+                    old.Dispose();
 
             Globals.Botbase.AttributeBundleConfig = BundleConfig;
         }
@@ -144,6 +147,21 @@ public partial class AttributesSettingsView : DoubleBufferedControl
     private void PanelOnChange(bool @checked, int maxValue)
     {
         Globals.Botbase.AttributeBundleConfig = BundleConfig;
+    }
+
+    private void OnInventoryUpdated()
+    {
+        if (!Visible || _attributePanels == null || SelectedItem == null)
+            return;
+
+        if (InvokeRequired)
+        {
+            BeginInvoke(OnInventoryUpdated);
+            return;
+        }
+
+        foreach (var panel in _attributePanels)
+            panel.RefreshStoneAmount(AlchemyItemHelper.GetAttributeStones(SelectedItem, panel.AttributeGroup));
     }
 
     private void View_EngineChanged(InventoryItem item, AlchemyEngine alchemyEngine)

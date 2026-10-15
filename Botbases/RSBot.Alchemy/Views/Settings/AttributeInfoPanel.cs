@@ -152,6 +152,18 @@ public partial class AttributeInfoPanel : DoubleBufferedControl
 
     #region Methods
 
+    public void RefreshStoneAmount(IEnumerable<InventoryItem> freshStones)
+    {
+        var totalAmount = freshStones?.Sum(i => i.Amount) ?? 0;
+        lblItemAmount.Text = $"x{totalAmount}";
+        var hasStones = totalAmount > 0;
+        lblItemAmount.Enabled = hasStones;
+        comboMaxValue.Enabled = hasStones;
+        checkSelected.Enabled = hasStones;
+        if (!hasStones && checkSelected.Checked)
+            checkSelected.Checked = false;
+    }
+
     /// <summary>
     ///     Gets the maximum value selected by the user.
     /// </summary>

@@ -43,6 +43,7 @@ namespace RSBot.Views
             comboDivision = new SDUI.Controls.ComboBox();
             btnSave = new SDUI.Controls.Button();
             btnStartStop = new SDUI.Controls.Button();
+            chkEnableHotkeys = new System.Windows.Forms.CheckBox();
             pSidebar = new SDUI.Controls.Panel();
             pSidebarCustom = new SDUI.Controls.Panel();
             entity1 = new Entity();
@@ -132,6 +133,7 @@ namespace RSBot.Views
             bottomPanel.Controls.Add(buttonConfig);
             bottomPanel.Controls.Add(comboServer);
             bottomPanel.Controls.Add(comboDivision);
+            bottomPanel.Controls.Add(chkEnableHotkeys);
             bottomPanel.Controls.Add(btnSave);
             bottomPanel.Controls.Add(btnStartStop);
             bottomPanel.Dock = DockStyle.Bottom;
@@ -158,7 +160,14 @@ namespace RSBot.Views
             buttonConfig.Text = "IP Bind";
             buttonConfig.UseVisualStyleBackColor = true;
             buttonConfig.Click += buttonConfig_Click;
-            // 
+            //
+            // chkEnableHotkeys
+            //
+            chkEnableHotkeys.Text = "Enable F5/F6 hotkeys";
+            chkEnableHotkeys.Location = new System.Drawing.Point(450, 22);
+            chkEnableHotkeys.Size = new System.Drawing.Size(180, 22);
+            chkEnableHotkeys.TabIndex = 13;
+            //
             // comboServer
             // 
             comboServer.DrawMode = DrawMode.OwnerDrawFixed;
@@ -574,6 +583,7 @@ namespace RSBot.Views
         private ToolStripMenuItem botsToolStripMenuItem;
         private ToolStripMenuItem autoToolStripMenuItem;
         private SDUI.Controls.Button buttonConfig;
+        private System.Windows.Forms.CheckBox chkEnableHotkeys;
         private ToolStripMenuItem networkConfigToolStripMenuItem;
         private ToolStripMenuItem menuCurrentProfile;
         private SDUI.Controls.WindowPageControl windowPageControl;

@@ -10,8 +10,10 @@ using RSBot.Core;
 using RSBot.Core.Components;
 using RSBot.Core.Event;
 using RSBot.Core.Extensions;
+using RSBot.Core.Objects;
 using RSBot.Core.Objects.Party;
 using RSBot.Core.Objects.Skill;
+using RSBot.Core.Objects.Spawn;
 using SDUI;
 using SDUI.Controls;
 using Button = SDUI.Controls.Button;
@@ -1239,10 +1241,67 @@ public partial class Main : DoubleBufferedControl
 
     private void AutoPartyBuffTimer_Tick(object sender, EventArgs e)
     {
-        if (!Game.Ready || Game.Player == null)
+        if (!Game.Ready || Game.Player == null || Game.Player.HasActiveVehicle)
             return;
 
-        EventManager.FireEvent("OnAutoPartyBuffTick");
+        InvokePartyBuff();
+    }
+
+    private void InvokePartyBuff()
+    {
+        var selectedGroup = _selectedBuffingGroup.Text;
+
+        void BuffMember(SpawnedPlayer member, List<uint> buffIds)
+        {
+            if (member.State.LifeState == LifeState.Dead)
+                return;
+
+            foreach (var buffId in buffIds)
+            {
+                var skill = Game.Player.Skills.GetSkillInfoById(buffId);
+                if (skill == null || skill.HasCooldown)
+                    continue;
+
+                if (skill.Record.TargetGroup_Party && !skill.Record.TargetGroup_Ally)
+                {
+                    if (!(Game.Party?.Members?.Any(p => p.Name == member.Name) ?? false))
+                        continue;
+                }
+
+                var isActive = member.State.HasActiveBuff(skill, out _);
+                if (isActive)
+                    continue;
+
+                Log.Status($"[AutoBuff] {skill.Record?.GetRealName()} -> {member.Name}");
+                skill.Cast(member.UniqueId, true);
+            }
+        }
+
+        // Per-member buffs
+        SpawnManager.TryGetEntities<SpawnedPlayer>(
+            p => _buffings.Any(s => s.Group == selectedGroup && s.Name == p.Name && s.Name != AllMembersName),
+            out var members);
+
+        foreach (var member in members)
+        {
+            var config = _buffings.Find(p => p.Name == member.Name && p.Group == selectedGroup);
+            if (config == null || config.Buffs.Count == 0)
+                continue;
+
+            BuffMember(member, config.Buffs);
+        }
+
+        // All Members wildcard
+        var allConfig = _buffings.Find(p => p.Name == AllMembersName && p.Group == selectedGroup);
+        if (allConfig == null || allConfig.Buffs.Count == 0)
+            return;
+
+        SpawnManager.TryGetEntities<SpawnedPlayer>(
+            p => Game.Party?.Members?.Any(m => m.Name == p.Name) ?? false,
+            out var partyMembers);
+
+        foreach (var partyMember in partyMembers)
+            BuffMember(partyMember, allConfig.Buffs);
     }
 
     private void EnsureAllMembersEntry(string group)
